@@ -1,0 +1,136 @@
+{
+  "id": 1001,
+  "title": "Sour Cream Coffee Cake",
+  "readyInMinutes": 40,
+  "servings": 8,
+  "summary": "A classic coffee cake with a sweet cinnamon-pecan topping, made with sour cream for a moist and tender crumb.",
+  "extendedIngredients": [
+    {
+      "id": 1,
+      "original": "1 cup sugar",
+      "name": "sugar",
+      "amount": 1,
+      "unit": "cup"
+    },
+    {
+      "id": 2,
+      "original": "1/2 stick butter",
+      "name": "butter",
+      "amount": 0.5,
+      "unit": "stick"
+    },
+    {
+      "id": 3,
+      "original": "1/2 pint sour cream",
+      "name": "sour cream",
+      "amount": 0.5,
+      "unit": "pint"
+    },
+    {
+      "id": 4,
+      "original": "1 teaspoon vanilla",
+      "name": "vanilla",
+      "amount": 1,
+      "unit": "teaspoon"
+    },
+    {
+      "id": 5,
+      "original": "1 teaspoon baking soda",
+      "name": "baking soda",
+      "amount": 1,
+      "unit": "teaspoon"
+    },
+    {
+      "id": 6,
+      "original": "1 1/2 cups flour",
+      "name": "flour",
+      "amount": 1.5,
+      "unit": "cup"
+    },
+    {
+      "id": 7,
+      "original": "1 1/2 teaspoons baking powder",
+      "name": "baking powder",
+      "amount": 1.5,
+      "unit": "teaspoon"
+    },
+    {
+      "id": 8,
+      "original": "1 egg",
+      "name": "egg",
+      "amount": 1,
+      "unit": "whole"
+    },
+    {
+      "id": 9,
+      "original": "3/4 cup sugar",
+      "name": "sugar",
+      "amount": 0.75,
+      "unit": "cup"
+    },
+    {
+      "id": 10,
+      "original": "1 teaspoon cinnamon",
+      "name": "cinnamon",
+      "amount": 1,
+      "unit": "teaspoon"
+    },
+    {
+      "id": 11,
+      "original": "3 tablespoons of finely chopped pecans",
+      "name": "pecans",
+      "amount": 3,
+      "unit": "tablespoon"
+    }
+  ],
+  "analyzedInstructions": [
+    {
+      "name": "Batter Preparation",
+      "steps": [
+        {
+          "number": 1,
+          "step": "Mix together 1 cup sugar, 1/2 stick butter, 1/2 pint sour cream, 1 teaspoon vanilla, 1 teaspoon baking soda, 1 1/2 cups flour, 1 1/2 teaspoons baking powder, and 1 egg to form the batter."
+        }
+      ]
+    },
+    {
+      "name": "Topping Preparation",
+      "steps": [
+        {
+          "number": 1,
+          "step": "Mix together 3/4 cup sugar, 1 teaspoon cinnamon, and 3 tablespoons of finely chopped pecans to make the topping."
+        }
+      ]
+    },
+    {
+      "name": "Assembly and Baking",
+      "steps": [
+        {
+          "number": 1,
+          "step": "Put half of batter in well greased pan."
+        },
+        {
+          "number": 2,
+          "step": "Spread half of topping on top of the first layer of batter."
+        },
+        {
+          "number": 3,
+          "step": "Add the rest of the batter on top."
+        },
+        {
+          "number": 4,
+          "step": "Spread the rest of the topping on top."
+        },
+        {
+          "number": 5,
+          "step": "Bake for 40 minutes at 350 degrees Fahrenheit."
+        },
+        {
+          "number": 6,
+          "step": "Cool then flip out and flip over."
+        }
+      ]
+    }
+  ],
+  "instructions": "Mix together 1 cup sugar, 1/2 stick butter, 1/2 pint sour cream, 1 teaspoon vanilla, 1 teaspoon baking soda, 1 1/2 cups flour, 1 1/2 teaspoons baking powder, and 1 egg to form the batter. Mix together 3/4 cup sugar, 1 teaspoon cinnamon, and 3 tablespoons of finely chopped pecans to make the topping. Put half of batter in well greased pan, spread half of topping on then add rest of batter then rest of topping. Bake for 40 minutes at 350 degrees Fahrenheit. Cool then flip out and flip over."
+}

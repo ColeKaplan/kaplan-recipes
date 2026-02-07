@@ -1,9 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { RecipeListItem } from "../types/recipe";
 
-const FoodCard = ({ recipe }) => {
+interface FoodCardProps {
+  recipe: RecipeListItem;
+}
+
+const FoodCard: React.FC<FoodCardProps> = ({ recipe }) => {
   // Construct the image URL using the Spoonacular API's image base URL and the image file name from the recipe object
-  const isValidUrl = (string) => {
+  const isValidUrl = (string: string): boolean => {
     try {
       new URL(string);
       return true;

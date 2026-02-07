@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Recipe from "./pages/Recipe";
 import Search from "./pages/Search";
+import CreateRecipe from "./pages/CreateRecipe";
 import SideBarLayout from "./layout/SideBarLayout";
 
 const queryClient = new QueryClient();
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/recipe/:id" element={<Recipe />} />
+          <Route path="/create-recipe" element={<CreateRecipe />} />
           <Route
             path="/search/:keyword/:mealType"
             element={

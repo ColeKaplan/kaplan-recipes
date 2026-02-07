@@ -1,21 +1,40 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState, FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-const SideBar = () => {
-  const [isShow, setIsShow] = useState(false);
-  const { keyword, mealType } = useParams();
-  const [searchTerm, setSearchTerm] = useState(keyword);
+interface MealTypeBadgeProps {
+  name: string;
+  onClick: () => void;
+  mealType: string;
+}
+
+const MealTypeBadge: React.FC<MealTypeBadgeProps> = ({ name, onClick, mealType }) => {
+  return (
+    <button
+      disabled={name.toLowerCase() === mealType}
+      className={`"text-center rounded-full px-3 py-1 text-sm font-semibold text-white m-7" ${
+        mealType === name.toLowerCase() ? "bg-gray-600" : "bg-gray-400"
+      }`}
+      onClick={onClick}
+    >
+      {name}
+    </button>
+  );
+};
+
+const SideBar: React.FC = () => {
+  const [isShow, setIsShow] = useState<boolean>(false);
+  const { keyword, mealType } = useParams<{ keyword?: string; mealType?: string }>();
+  const [searchTerm, setSearchTerm] = useState<string>(keyword || "");
 
   const navigate = useNavigate();
 
-  const handleInputChange = (event) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    navigate(`/search/${searchTerm}/${mealType}`);
+    navigate(`/search/${searchTerm}/${mealType || "all"}`);
   };
 
   const mealTypes = [
@@ -34,20 +53,6 @@ const SideBar = () => {
     "Snack",
     "Drink",
   ];
-
-  const mealTypeBadge = ({ name, onClick }) => {
-    return (
-      <button
-        disabled={name.toLowerCase() === mealType}
-        className={`"text-center rounded-full px-3 py-1 text-sm font-semibold text-white m-7" ${
-          mealType === name.toLowerCase() ? "bg-gray-600" : "bg-gray-400"
-        }`}
-        onClick={onClick}
-      >
-        {name}
-      </button>
-    );
-  };
 
   return (
     <>
@@ -123,19 +128,22 @@ const SideBar = () => {
           <h1 className="text-gray-700 font-bold ">Meal Type</h1>
 
           <div className="flex flex-wrap gap-2">
-            {mealTypes.map((mealType) =>
-              mealTypeBadge({
-                name: mealType,
-                onClick: () =>
-                  navigate(`/search/${keyword}/${mealType.toLowerCase()}`),
-              })
-            )}
+            {mealTypes.map((mealTypeName) => (
+              <MealTypeBadge
+                key={mealTypeName}
+                name={mealTypeName}
+                mealType={mealType || "all"}
+                onClick={() =>
+                  navigate(`/search/${keyword || "random"}/${mealTypeName.toLowerCase()}`)
+                }
+              />
+            ))}
             <button
               disabled={mealType === "all"}
               className={`"text-center rounded-full px-3 py-1 text-sm font-semibold text-white m-7" ${
                 mealType === "all" ? "bg-gray-600" : "bg-gray-400"
               }`}
-              onClick={() => navigate(`/search/${keyword}/all`)}
+              onClick={() => navigate(`/search/${keyword || "random"}/all`)}
             >
               All
             </button>

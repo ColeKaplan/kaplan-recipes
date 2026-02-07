@@ -3,8 +3,8 @@ import useFetchPopularFood from "../hooks/useFetchPopularFood";
 import FoodCard from "./FoodCard";
 import LoadIcon from "../img/icon/loading.gif";
 
-const PopularFoods = () => {
-  const [pageNumber, setPageNumber] = useState(1);
+const PopularFoods: React.FC = () => {
+  const [pageNumber, setPageNumber] = useState<number>(1);
   const pageSize = 8;
 
   // Calling the `useFetchPopularFood` hook for fetching popular food data

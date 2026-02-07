@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import DinnerIcon from "../img/icon/dinner.png";
 import BreakfastIcon from "../img/icon/breakfast.png";
 import SnackIcon from "../img/icon/snack.png";
@@ -12,24 +12,32 @@ import SauceIcon from "../img/icon/sauce.png";
 import MarinadeIcon from "../img/icon/marinade.png";
 import DrinkIcon from "../img/icon/drink.png";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 
-const FoodCategory = () => {
+interface MealTypeCardProps {
+  icon: string;
+  title: string;
+  isHidden?: boolean;
+}
+
+const MealTypeCard: React.FC<MealTypeCardProps> = ({ icon, title, isHidden }) => {
   const navigate = useNavigate();
-  const [isHidden, setIsHidden] = useState(true);
-  const MealTypeCard = ({ icon, title, isHidden }) => {
-    return (
-      <button
-        className={`" rounded-lg shadow-lg p-4 flex flex-col justify-center items-center bg-gray-700 hover:bg-gray-500 "   ${
-          isHidden ? "hidden" : "block"
-        }`}
-        onClick={() => navigate(`/search/random/${title.toLowerCase()}`)}
-      >
-        <img src={icon} alt="dinner" className="w-28" />
-        <p className="text-white text-lg font-semibold">{title}</p>
-      </button>
-    );
-  };
+  
+  return (
+    <button
+      className={`" rounded-lg shadow-lg p-4 flex flex-col justify-center items-center bg-gray-700 hover:bg-gray-500 "   ${
+        isHidden ? "hidden" : "block"
+      }`}
+      onClick={() => navigate(`/search/random/${title.toLowerCase()}`)}
+    >
+      <img src={icon} alt="dinner" className="w-28" />
+      <p className="text-white text-lg font-semibold">{title}</p>
+    </button>
+  );
+};
+
+const MealType: React.FC = () => {
+  const navigate = useNavigate();
+  const [isHidden, setIsHidden] = useState<boolean>(true);
 
   return (
     <div className="flex flex-col  py-6 bg-gray-200">
@@ -100,4 +108,4 @@ const FoodCategory = () => {
   );
 };
 
-export default FoodCategory;
+export default MealType;

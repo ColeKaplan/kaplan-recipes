@@ -1,13 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import useFetchRecipe from "../hooks/useFetchRecipe";
 import LoadIcon from "../img/icon/loading.gif";
-import { useEffect } from "react";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
 
-const Recipe = () => {
-  const { id } = useParams();
+const Recipe: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const { data: recipe, isLoading, isError } = useFetchRecipe(id);
 
   useEffect(() => {
@@ -22,7 +21,7 @@ const Recipe = () => {
     );
   }
 
-  if (isError) {
+  if (isError || !recipe) {
     return (
       <div className="h-screen bg-gray-200 flex justify-center items-center">
         <h1>

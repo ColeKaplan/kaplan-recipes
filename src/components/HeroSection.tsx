@@ -1,16 +1,16 @@
-import React from "react";
+import React, { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 
-const HeroSection = () => {
+const HeroSection: React.FC = () => {
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState("random");
+  const [keyword, setKeyword] = useState<string>("random");
 
-  const handleUserInput = (e) => {
+  const handleUserInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value);
   };
 
-  const handleSearch = () => {
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     navigate(`/search/${keyword}/all`);
   };
 

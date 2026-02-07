@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const NavBar = () => {
+const NavBar: React.FC = () => {
   return (
     <nav className="bg-gray-900/60 backdrop-blur-sm text-white py-4 fixed w-full z-40 px-6">
       <div className="container mx-auto flex items-center  justify-between flex-wrap">
@@ -19,9 +19,9 @@ const NavBar = () => {
           <Link to={`/search/random/all`} className="mr-6">
             Recipes
           </Link>
-          <a href="/about" className="mr-6">
-            About
-          </a>
+          <Link to="/create-recipe" className="mr-6">
+            Create Recipe
+          </Link>
         </div>
         {/* End of Navbar Menu */}
       </div>

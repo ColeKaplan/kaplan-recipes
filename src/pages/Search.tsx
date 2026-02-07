@@ -1,16 +1,18 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import useSearch from "../hooks/useSearch";
 import FoodCard from "../components/FoodCard";
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
 import LoadIcon from "../img/icon/loading.gif";
 
-const Search = () => {
-  const { keyword: keywordParam, mealType: mealTypeParam } = useParams();
-  const mealType = mealTypeParam === "all" ? "" : mealTypeParam;
-  const keyword = keywordParam === "random" ? "" : keywordParam;
+const Search: React.FC = () => {
+  const { keyword: keywordParam, mealType: mealTypeParam } = useParams<{
+    keyword?: string;
+    mealType?: string;
+  }>();
+  const mealType = mealTypeParam === "all" ? "" : mealTypeParam || "";
+  const keyword = keywordParam === "random" ? "" : keywordParam || "";
 
-  const [pageNumber, setPageNumber] = useState(0);
+  const [pageNumber, setPageNumber] = useState<number>(0);
   const pageSize = 8;
   const { isLoading, error, data } = useSearch(
     keyword,
@@ -22,7 +24,7 @@ const Search = () => {
   // Reset page number to 0 when keyword changes
   useEffect(() => {
     setPageNumber(0);
-  }, [keyword, mealType, setPageNumber]);
+  }, [keyword, mealType]);
 
   // Define two functions to handle pagination
   const handleNextPage = () => {
