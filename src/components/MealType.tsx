@@ -47,7 +47,7 @@ const MealType: React.FC = () => {
       </div>
       {/*end of tittle */}
       {/* meal category card */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:pt-8 md:px-28  z-10 ">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pt-8 md:px-28  z-10 ">
         <MealTypeCard icon={DinnerIcon} title="Main Course" />
         <MealTypeCard icon={DessertIcon} title="Dessert" />
         <MealTypeCard icon={AppetizerIcon} title="Appetizer" />
