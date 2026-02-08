@@ -38,7 +38,7 @@ const MealType: React.FC = () => {
   const [isHidden, setIsHidden] = useState<boolean>(true);
 
   return (
-    <div className="flex flex-col  pt-20 bg-gray-200">
+    <div className="flex flex-col px-8 pt-20 bg-gray-200">
       {/* tittle */}
       <div>
         <h1 className="text-center text-2xl font-bold text-gray-700 ">

@@ -26,7 +26,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ message }) => {
                 <div className="relative rounded-2xl bg-white/70  p-3 md:w-96 w-4/5 mt-4 z-20">
                     <input
                         type="text"
-                        className="w-full bg-transparent outline-none text-black font-bold placeholder:text-gray-700"
+                        className="w-full bg-transparent outline-none text-black font-bold placeholder:text-gray-700 placeholder:opacity-0 md:placeholder:opacity-100"
                         placeholder={message || "What are you craving today?"}
                         onChange={handleUserInput}
                         required

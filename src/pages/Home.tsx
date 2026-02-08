@@ -10,7 +10,10 @@ const Home: React.FC = () => {
     <>
       <NavBar />
       <HeroSection />
-      <MealType />
+      <div className="">
+        <MealType />
+      </div>
+
       <PopularFoods />
       <Footer />
     </>

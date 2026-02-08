@@ -53,7 +53,7 @@ const Search: React.FC = () => {
   return (
     <>
       <NavBar />
-      <div className="pt-24 bg-gray-200 w-full p-8 items-center flex flex-col justify-center min-h-screen">
+      <div className="pt-24 bg-gray-200 w-full items-center flex flex-col justify-center min-h-screen">
         <div className="w-full pb-6 text-center">
           <h1 className="capitalize font-semibold text-4xl">
             {keyword && mealType ? `${keyword} (${mealType})` : keyword || mealType || "Recipes"}

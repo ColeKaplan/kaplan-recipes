@@ -146,7 +146,7 @@ const Recipe: React.FC = () => {
             </div>
           )}
           {/* Recipe details */}
-          <div className="w-1/2 justify-center text-center align-center">
+          <div className="w-full lg:w-1/2 justify-center text-center align-center">
             {/* Recipe title */}
             <h1 className="text-3xl font-bold md:mb-5 mb-2">{recipe.title}</h1>
 
