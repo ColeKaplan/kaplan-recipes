@@ -59,7 +59,7 @@ const Search: React.FC = () => {
             {keyword && mealType ? `${keyword} (${mealType})` : keyword || mealType || "Recipes"}
           </h1>
         </div>
-        <div className="justify-items-center grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4 pb-8 md:px-14 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4 pb-8 md:px-14 w-full">
           {data && data.length === 0 ? (
             <p>Recipe not found.</p>
           ) : (

@@ -74,16 +74,6 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
     });
   };
 
-  const updateIngredient = (
-    index: number,
-    field: keyof RecipeFormData["ingredients"][0],
-    value: string | number | null
-  ) => {
-    const updated = [...formData.ingredients];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, ingredients: updated });
-  };
-
   const addInstruction = () => {
     setFormData({
       ...formData,

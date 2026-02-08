@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Recipe from "./pages/Recipe";
 import Search from "./pages/Search";
 import CreateRecipe from "./pages/CreateRecipe";
-import SideBarLayout from "./layout/SideBarLayout";
 
 const queryClient = new QueryClient();
 

@@ -35,7 +35,6 @@ const MealTypeCard: React.FC<MealTypeCardProps> = ({ icon, title, isHidden }) =>
 };
 
 const MealType: React.FC = () => {
-  const navigate = useNavigate();
   const [isHidden, setIsHidden] = useState<boolean>(true);
 
   return (

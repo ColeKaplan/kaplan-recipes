@@ -1,19 +1,7 @@
-import React, { useState, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import SearchBar from "./SearchBar";
 
 const HeroSection: React.FC = () => {
-  const navigate = useNavigate();
-  const [keyword, setKeyword] = useState<string>("random");
-
-  const handleUserInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setKeyword(e.target.value);
-  };
-
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    navigate(`/search/${keyword}/all`);
-  };
 
   const scrollDown = () => {
     window.scrollTo({
