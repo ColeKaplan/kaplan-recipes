@@ -99,6 +99,9 @@ const useFetchRecipe = (recipeId: string | undefined) => {
       userId: recipe.user_id || undefined,
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
+      aggregateRating: recipe.aggregate_rating || 0,
+      ratingCount: recipe.rating_count || 0,
+      images: recipe.images || null,
     };
   };
 

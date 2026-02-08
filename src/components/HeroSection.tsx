@@ -1,5 +1,6 @@
 import React, { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import SearchBar from "./SearchBar";
 
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
@@ -14,42 +15,44 @@ const HeroSection: React.FC = () => {
     navigate(`/search/${keyword}/all`);
   };
 
+  const scrollDown = () => {
+    window.scrollTo({
+      top: window.innerHeight - 64,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <div className="flex flex-col items-center  justify-center  min-h-screen bg-hero-background bg-cover md:bg-center bg-no-repeat">
+    <div className="flex flex-col items-center justify-center  min-h-screen bg-hero-background bg-cover bg-center bg-no-repeat">
       {/* Web Name */}
-      <div className="text-gray-700 text-center md:block hidden md:mt-6">
-        <h1 className="text-7xl font-bold">Recipefy</h1>
-        <h1 className="text-2xl font-semibold">Your Best Cooking Companion</h1>
+      <div className="text-white text-center md:block hidden md:mt-6">
+        <h1 className="text-7xl font-bold">Search</h1>
+        {/* <h1 className="text-2xl font-semibold">Your Best Cooking Companion</h1> */}
       </div>
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="w-full flex justify-center">
-        <div className="relative rounded-2xl bg-white/70  p-3 md:w-96 w-4/5 mt-4 z-20">
-          <input
-            type="text"
-            className="w-full bg-transparent outline-none text-gray-900"
-            placeholder="What are you craving today?"
-            onChange={handleUserInput}
-            required
+      <SearchBar />
+
+      {/* Scroll Down Indicator */}
+      <button
+        onClick={scrollDown}
+        className="absolute bottom-6 flex flex-col items-center text-white opacity-80 hover:opacity-100 transition animate-bounce"
+        aria-label="Scroll for more"
+      >
+        <span className="text-sm tracking-wide mb-1">Explore</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+          className="w-6 h-6"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
           />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-          </div>
-        </div>
-      </form>
-      {/* End of Search Bar */}
+        </svg>
+      </button>
     </div>
   );
 };

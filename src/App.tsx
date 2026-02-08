@@ -20,9 +20,8 @@ function App() {
           <Route
             path="/search/:keyword/:mealType"
             element={
-              <SideBarLayout>
-                <Search />
-              </SideBarLayout>
+              <Search />
+
             }
           />
         </Routes>

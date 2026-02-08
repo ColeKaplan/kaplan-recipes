@@ -8,7 +8,7 @@ const NavBar: React.FC = () => {
         {/* Website Name */}
         <div className="flex items-center flex-shrink-0 mr-6">
           <a href="/" className="text-2xl font-bold tracking-wide">
-            Recipefy
+            Kaplan Family Recipes
           </a>
         </div>
         {/* Navbar Menu */}

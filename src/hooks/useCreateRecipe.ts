@@ -26,15 +26,47 @@ const useCreateRecipe = () => {
         data: { user },
       } = await supabase.auth.getUser();
 
+      // Upload images if present
+      let uploadedImageUrls: string[] = [];
+      if (formData.imageFiles && formData.imageFiles.length > 0) {
+        for (const file of formData.imageFiles) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('recipe-images')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            // Continue with other images or fail? Let's continue but log it.
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('recipe-images')
+            .getPublicUrl(filePath);
+
+          uploadedImageUrls.push(publicUrl);
+        }
+      }
+
+      // If manual URL string was provided and no files, use that.
+      // If files provided, use first file as main image.
+      const mainImageUrl = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : (formData.imageUrl || null);
+
       // Insert recipe
-      const recipeInsert: RecipeInsert = {
+      const recipeInsert: RecipeInsert & { images?: string[] } = {
         title: formData.title,
         summary: formData.summary || null,
         ready_in_minutes: formData.readyInMinutes,
         servings: formData.servings,
-        image_url: formData.imageUrl || null,
+        image_url: mainImageUrl,
         meal_type: formData.mealType || null,
         user_id: user?.id || null,
+        // We need to cast this later or update type definition, but valid for Supabase if column exists
+        images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined,
       };
 
       const { data: recipe, error: recipeError } = await supabase

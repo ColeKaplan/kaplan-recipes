@@ -23,7 +23,7 @@ const PopularFoods: React.FC = () => {
     return (
       <div className="p-0 m-0 bg-gray-200">
         <h1 className="text-center text-2xl font-bold text-gray-700 ">
-          Popular Food Recipe
+          Popular Recipes
         </h1>
         <img src={LoadIcon} alt="loading" className="mx-auto" />
       </div>
@@ -44,10 +44,10 @@ const PopularFoods: React.FC = () => {
 
   // If there is data, render it
   return (
-    <div className="bg-gray-200 ">
+    <div className="bg-gray-200 pt-10">
       <div>
-        <h1 className="text-center text-2xl font-bold text-gray-700 mb-28">
-          Popular Food Recipe
+        <h1 className="text-center text-2xl font-bold text-gray-700 mb-10">
+          Popular Recipes
         </h1>
       </div>
       {/* Food Card */}
@@ -57,26 +57,24 @@ const PopularFoods: React.FC = () => {
       </div>
       {/* Prev and Next Button */}
       {data ? (
-        <div className="flex justify-center md:p-10 p-6">
+        <div className="flex justify-center mt-6 pb-20">
           <button
             onClick={handlePrevPage}
-            disabled={pageNumber === 1}
-            className={`font-bold py-2 px-4 rounded mr-2 text-white ${
-              pageNumber === 1
-                ? "bg-gray-400 "
-                : "bg-gray-600 hover:bg-gray-700 "
-            } `}
+            hidden={pageNumber === 1}
+            className={`font-bold py-2 px-4 rounded mr-2 text-white ${pageNumber === 1
+              ? "bg-gray-400 "
+              : "bg-gray-600 hover:bg-gray-700 "
+              } `}
           >
             Prev
           </button>
           <button
             onClick={handleNextPage}
-            disabled={data.length < pageSize}
-            className={`font-bold py-2 px-4 rounded mr-2 text-white ${
-              data.length < pageSize
-                ? "bg-gray-400 "
-                : "bg-gray-600 hover:bg-gray-700 "
-            } `}
+            hidden={data.length < pageSize}
+            className={`font-bold py-2 px-4 rounded mr-2 text-white ${data.length < pageSize
+              ? "bg-gray-400 "
+              : "bg-gray-600 hover:bg-gray-700 "
+              } `}
           >
             Next
           </button>

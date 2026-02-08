@@ -21,12 +21,11 @@ interface MealTypeCardProps {
 
 const MealTypeCard: React.FC<MealTypeCardProps> = ({ icon, title, isHidden }) => {
   const navigate = useNavigate();
-  
+
   return (
     <button
-      className={`" rounded-lg shadow-lg p-4 flex flex-col justify-center items-center bg-gray-700 hover:bg-gray-500 "   ${
-        isHidden ? "hidden" : "block"
-      }`}
+      className={`" rounded-lg shadow-lg p-4 flex flex-col justify-center items-center bg-gray-700 hover:bg-gray-500 "   ${isHidden ? "hidden" : "block"
+        }`}
       onClick={() => navigate(`/search/random/${title.toLowerCase()}`)}
     >
       <img src={icon} alt="dinner" className="w-28" />
@@ -40,16 +39,16 @@ const MealType: React.FC = () => {
   const [isHidden, setIsHidden] = useState<boolean>(true);
 
   return (
-    <div className="flex flex-col  py-6 bg-gray-200">
+    <div className="flex flex-col  pt-20 bg-gray-200">
       {/* tittle */}
       <div>
         <h1 className="text-center text-2xl font-bold text-gray-700 ">
-          Find Your Type of Meal
+          Find By Category
         </h1>
       </div>
       {/*end of tittle */}
       {/* meal category card */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:pt-28 md:px-28 p-10  z-10 ">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:pt-8 md:px-28  z-10 ">
         <MealTypeCard icon={DinnerIcon} title="Main Course" />
         <MealTypeCard icon={DessertIcon} title="Dessert" />
         <MealTypeCard icon={AppetizerIcon} title="Appetizer" />
@@ -76,7 +75,7 @@ const MealType: React.FC = () => {
         <MealTypeCard icon={DrinkIcon} title="Drink" isHidden={isHidden} />
       </div>
       {/* end meal category card */}
-      <div className="w-full flex justify-center pb-20 mt-6">
+      <div className="w-full flex justify-center pb-10 mt-6">
         <button
           onClick={() => setIsHidden(!isHidden)}
           className="flex flex-col items-center"

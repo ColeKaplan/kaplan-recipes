@@ -22,6 +22,9 @@ export interface Database {
           meal_type: string | null
           created_at: string
           updated_at: string
+          aggregate_rating: number | null
+          rating_count: number | null
+          images: string[] | null
         }
         Insert: {
           id?: string
@@ -34,6 +37,9 @@ export interface Database {
           meal_type?: string | null
           created_at?: string
           updated_at?: string
+          aggregate_rating?: number | null
+          rating_count?: number | null
+          images?: string[] | null
         }
         Update: {
           id?: string
@@ -46,6 +52,9 @@ export interface Database {
           meal_type?: string | null
           created_at?: string
           updated_at?: string
+          aggregate_rating?: number | null
+          rating_count?: number | null
+          images?: string[] | null
         }
       }
       ingredients: {
@@ -103,6 +112,29 @@ export interface Database {
           step_number?: number
           step_text?: string
           instruction_group?: string | null
+          created_at?: string
+        }
+      }
+      comments: {
+        Row: {
+          id: string
+          recipe_id: string
+          author_name: string | null
+          comment_text: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          recipe_id: string
+          author_name?: string | null
+          comment_text: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          recipe_id?: string
+          author_name?: string | null
+          comment_text?: string
           created_at?: string
         }
       }

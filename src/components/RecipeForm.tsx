@@ -13,10 +13,27 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
     readyInMinutes: 0,
     servings: 1,
     imageUrl: "",
+    imageFiles: [],
     mealType: "",
     ingredients: [{ original: "", name: "", amount: null, unit: null }],
     instructions: [{ stepNumber: 1, stepText: "", instructionGroup: "" }],
   });
+
+  const [previews, setPreviews] = useState<string[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setFormData({
+        ...formData,
+        imageFiles: files
+      });
+
+      // Create previews
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setPreviews(newPreviews);
+    }
+  };
 
   const mealTypes = [
     "Main Course",
@@ -146,7 +163,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    readyInMinutes: parseInt(e.target.value) || 0,
+                    readyInMinutes: parseInt(e.target.value),
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -155,7 +172,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Servings *
+                Servings*
               </label>
               <input
                 type="number"
@@ -165,7 +182,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    servings: parseInt(e.target.value) || 1,
+                    servings: parseInt(e.target.value),
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -195,17 +212,28 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image URL
+              Recipe Images (Multiple allowed)
             </label>
             <input
-              type="url"
-              value={formData.imageUrl}
-              onChange={(e) =>
-                setFormData({ ...formData, imageUrl: e.target.value })
-              }
-              placeholder="https://example.com/image.jpg"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {previews.length > 0 && (
+              <div className="mt-4 flex gap-4 overflow-x-auto pb-4">
+                {previews.map((src, idx) => (
+                  <div key={idx} className="flex-shrink-0 relative w-40 h-40">
+                    <img
+                      src={src}
+                      alt={`Preview ${idx}`}
+                      className="w-full h-full object-cover rounded-md shadow-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -236,8 +264,8 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
                   onChange={(e) => {
                     const value = e.target.value;
                     const updated = [...formData.ingredients];
-                    updated[index] = { 
-                      ...updated[index], 
+                    updated[index] = {
+                      ...updated[index],
                       original: value,
                       // Try to parse name from original (simple parsing)
                       name: value.split(" ").length > 0 ? value.split(" ")[value.split(" ").length - 1] : ""

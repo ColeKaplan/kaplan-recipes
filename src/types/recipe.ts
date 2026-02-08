@@ -34,6 +34,9 @@ export interface Recipe {
   userId?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  aggregateRating?: number;
+  ratingCount?: number;
+  images?: string[] | null;
 }
 
 export interface RecipeListItem {
@@ -43,6 +46,8 @@ export interface RecipeListItem {
   readyInMinutes: number;
   servings: number;
   mealType?: string | null;
+  aggregateRating?: number;
+  ratingCount?: number;
 }
 
 // Form types for recipe creation
@@ -52,6 +57,7 @@ export interface RecipeFormData {
   readyInMinutes: number;
   servings: number;
   imageUrl?: string;
+  imageFiles?: File[];
   mealType?: string;
   ingredients: {
     original: string;
