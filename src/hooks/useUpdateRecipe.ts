@@ -3,6 +3,7 @@ import { RecipeFormData } from "../types/recipe";
 import { supabase } from "../lib/supabase";
 import { Recipe } from "../types/recipe";
 import { Database } from "../types/database";
+import { cleanupRemovedImages } from "../utils/storageUtils";
 
 type RecipeRow = Database["public"]["Tables"]["recipes"]["Row"];
 type RecipeUpdate = Database["public"]["Tables"]["recipes"]["Update"];
@@ -26,6 +27,15 @@ const useUpdateRecipe = () => {
 
     return useMutation<UpdateRecipeResponse, Error, UpdateRecipeParams>(
         async ({ recipeId, formData }: UpdateRecipeParams) => {
+            // Fetch the original recipe to get current images for cleanup
+            const { data: originalRecipe } = await supabase
+                .from("recipes")
+                .select("images")
+                .eq("id", recipeId)
+                .single<RecipeRow>();
+
+            const originalImages = originalRecipe?.images as string[] | null;
+
             // Use existing images from formData (which may have been modified by user deletions)
             const existingImages = formData.existingImages || [];
 
@@ -57,6 +67,9 @@ const useUpdateRecipe = () => {
             // Combine existing images (after deletions) with new uploads
             const allImages = [...existingImages, ...uploadedImageUrls];
             const mainImageUrl = allImages.length > 0 ? allImages[0] : (formData.imageUrl || null);
+
+            // Clean up removed images from storage
+            await cleanupRemovedImages(originalImages, allImages);
 
             // Update recipe
             const recipeUpdate: RecipeUpdate = {

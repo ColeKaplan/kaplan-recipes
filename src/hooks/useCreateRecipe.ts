@@ -3,6 +3,7 @@ import { RecipeFormData } from "../types/recipe";
 import { supabase } from "../lib/supabase";
 import { Recipe } from "../types/recipe";
 import { Database } from "../types/database";
+import { deleteImagesFromStorage } from "../utils/storageUtils";
 
 type RecipeRow = Database["public"]["Tables"]["recipes"]["Row"];
 type RecipeInsert = Database["public"]["Tables"]["recipes"]["Insert"];
@@ -103,6 +104,10 @@ const useCreateRecipe = () => {
         if (ingredientsError) {
           // Rollback recipe if ingredients fail
           await supabase.from("recipes").delete().eq("id", recipe.id);
+          // Clean up uploaded images from storage
+          if (uploadedImageUrls.length > 0) {
+            await deleteImagesFromStorage(uploadedImageUrls);
+          }
           throw ingredientsError;
         }
       }
@@ -124,6 +129,10 @@ const useCreateRecipe = () => {
           // Rollback recipe and ingredients if instructions fail
           await supabase.from("ingredients").delete().eq("recipe_id", recipe.id);
           await supabase.from("recipes").delete().eq("id", recipe.id);
+          // Clean up uploaded images from storage
+          if (uploadedImageUrls.length > 0) {
+            await deleteImagesFromStorage(uploadedImageUrls);
+          }
           throw instructionsError;
         }
       }

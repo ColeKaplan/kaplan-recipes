@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RecipeComment } from "../hooks/useRecipeComments";
 import useAddComment from "../hooks/useAddComment";
+import useDeleteComment from "../hooks/useDeleteComment";
+import { supabase } from "../lib/supabase";
 
 interface CommentItemProps {
     comment: RecipeComment;
@@ -14,8 +16,19 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, recipeId, depth = 0 
     const [replyAuthorName, setReplyAuthorName] = useState("");
     const [isAnonymous, setIsAnonymous] = useState(true);
     const [showReplies, setShowReplies] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const { mutate: addComment, isLoading: isSubmitting } = useAddComment();
+    const { mutate: deleteComment, isLoading: isDeleting } = useDeleteComment();
+
+    useEffect(() => {
+        // Check if user is logged in (admin check)
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setIsAdmin(!!user);
+        };
+        checkAuth();
+    }, []);
 
     const handleSubmitReply = (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,6 +51,19 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, recipeId, depth = 0 
                 },
             }
         );
+    };
+
+    const handleDelete = () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this comment? This will also delete all replies to this comment."
+        );
+
+        if (!confirmed) return;
+
+        deleteComment({
+            commentId: comment.id,
+            recipeId: recipeId,
+        });
     };
 
     const formatDate = (dateString: string) => {
@@ -101,6 +127,15 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, recipeId, depth = 0 
                             className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
                         >
                             {showReplies ? "Hide" : "Show"} {comment.replies.length} {comment.replies.length === 1 ? "reply" : "replies"}
+                        </button>
+                    )}
+                    {isAdmin && (
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isDeleting ? "Deleting..." : "Delete"}
                         </button>
                     )}
                 </div>

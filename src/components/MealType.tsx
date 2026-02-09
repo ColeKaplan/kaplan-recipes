@@ -1,16 +1,16 @@
 import React, { useState } from "react";
-import DinnerIcon from "../img/icon/dinner.png";
-import BreakfastIcon from "../img/icon/breakfast.png";
-import SnackIcon from "../img/icon/snack.png";
-import DessertIcon from "../img/icon/dessert.png";
-import AppetizerIcon from "../img/icon/appetizer.png";
-import SaladIcon from "../img/icon/salad.png";
-import BreadIcon from "../img/icon/bread.png";
-import SoupIcon from "../img/icon/soup.png";
-import BeverageIcon from "../img/icon/beverage.png";
-import SauceIcon from "../img/icon/sauce.png";
-import MarinadeIcon from "../img/icon/marinade.png";
-import DrinkIcon from "../img/icon/drink.png";
+import DinnerIcon from "../img/icon/dinner.avif";
+import BreakfastIcon from "../img/icon/breakfast.avif";
+import SnackIcon from "../img/icon/snack.avif";
+import DessertIcon from "../img/icon/dessert.avif";
+import AppetizerIcon from "../img/icon/appetizer.avif";
+import SaladIcon from "../img/icon/salad.avif";
+import BreadIcon from "../img/icon/bread.avif";
+import SoupIcon from "../img/icon/soup.avif";
+import BeverageIcon from "../img/icon/beverage.avif";
+import SauceIcon from "../img/icon/sauce.avif";
+import MarinadeIcon from "../img/icon/marinade.avif";
+import DrinkIcon from "../img/icon/drink.avif";
 import { useNavigate } from "react-router-dom";
 
 interface MealTypeCardProps {

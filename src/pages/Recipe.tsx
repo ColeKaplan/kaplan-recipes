@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "react-query";
 import useFetchRecipe from "../hooks/useFetchRecipe";
+import useDeleteRecipe from "../hooks/useDeleteRecipe";
 import { supabase } from "../lib/supabase";
 import LoadIcon from "../img/icon/loading.gif";
 import NavBar from "../components/NavBar";
@@ -13,6 +14,7 @@ const Recipe: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: recipe, isLoading, isError } = useFetchRecipe(id);
+  const deleteRecipeMutation = useDeleteRecipe();
   const [userRating, setUserRating] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -56,6 +58,25 @@ const Recipe: React.FC = () => {
       });
     } else {
       console.error("Error updating rating:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!recipe || !id) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${recipe.title}"? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteRecipeMutation.mutateAsync({ recipeId: id });
+      // Navigate to home page after successful deletion
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
+      alert("Failed to delete recipe. Please try again.");
     }
   };
 
@@ -161,14 +182,21 @@ const Recipe: React.FC = () => {
             {/* Recipe title */}
             <h1 className="text-3xl font-bold md:mb-5 mb-2">{recipe.title}</h1>
 
-            {/* Edit button for logged-in users */}
+            {/* Edit and Delete buttons for logged-in users */}
             {isLoggedIn && (
-              <div className="mb-4">
+              <div className="mb-4 flex gap-3 justify-center">
                 <button
                   onClick={() => navigate(`/edit-recipe/${id}`)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
                 >
                   Edit Recipe
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteRecipeMutation.isLoading}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteRecipeMutation.isLoading ? "Deleting..." : "Delete Recipe"}
                 </button>
               </div>
             )}
