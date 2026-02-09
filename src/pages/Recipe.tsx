@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import LoadIcon from "../img/icon/loading.gif";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
+import CommentsSection from "../components/CommentsSection";
 
 const Recipe: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -246,6 +247,9 @@ const Recipe: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Comments Section */}
+          <CommentsSection recipeId={id!} />
         </div>
       </div >
       <Footer />

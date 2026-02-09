@@ -115,6 +115,35 @@ export interface Database {
           created_at?: string
         }
       }
+      recipe_comments: {
+        Row: {
+          id: string
+          recipe_id: string
+          parent_comment_id: string | null
+          author_name: string | null
+          comment_text: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          recipe_id: string
+          parent_comment_id?: string | null
+          author_name?: string | null
+          comment_text: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          recipe_id?: string
+          parent_comment_id?: string | null
+          author_name?: string | null
+          comment_text?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
