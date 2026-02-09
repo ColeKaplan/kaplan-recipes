@@ -5,6 +5,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Recipe from "./pages/Recipe";
 import Search from "./pages/Search";
 import CreateRecipe from "./pages/CreateRecipe";
+import EditRecipe from "./pages/EditRecipe";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +18,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/recipe/:id" element={<Recipe />} />
           <Route path="/create-recipe" element={<CreateRecipe />} />
+          <Route path="/edit-recipe/:id" element={<EditRecipe />} />
+          <Route path="/login" element={<Login />} />
           <Route
             path="/search/:keyword/:mealType"
             element={

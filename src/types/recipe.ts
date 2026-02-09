@@ -58,6 +58,7 @@ export interface RecipeFormData {
   servings: number;
   imageUrl?: string;
   imageFiles?: File[];
+  existingImages?: string[]; // For edit mode - images to keep
   mealType?: string;
   ingredients: {
     original: string;

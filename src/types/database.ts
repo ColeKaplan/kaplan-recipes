@@ -115,29 +115,6 @@ export interface Database {
           created_at?: string
         }
       }
-      comments: {
-        Row: {
-          id: string
-          recipe_id: string
-          author_name: string | null
-          comment_text: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          recipe_id: string
-          author_name?: string | null
-          comment_text: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          recipe_id?: string
-          author_name?: string | null
-          comment_text?: string
-          created_at?: string
-        }
-      }
     }
   }
 }

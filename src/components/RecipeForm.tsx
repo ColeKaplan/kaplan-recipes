@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RecipeFormData } from "../types/recipe";
+import { Recipe } from "../types/recipe";
 
 interface RecipeFormProps {
   onSubmit: (data: RecipeFormData) => void;
   isLoading?: boolean;
+  initialData?: Recipe;
+  mode?: "create" | "edit";
 }
 
-const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
+const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading, initialData, mode = "create" }) => {
   const [formData, setFormData] = useState<RecipeFormData>({
     title: "",
     summary: "",
@@ -20,6 +23,40 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
   });
 
   const [previews, setPreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+
+  // Initialize form with existing recipe data in edit mode
+  useEffect(() => {
+    if (initialData && mode === "edit") {
+      setFormData({
+        title: initialData.title,
+        summary: initialData.summary || "",
+        readyInMinutes: initialData.readyInMinutes,
+        servings: initialData.servings,
+        imageUrl: initialData.image || "",
+        imageFiles: [],
+        mealType: initialData.mealType || "",
+        ingredients: initialData.extendedIngredients.map(ing => ({
+          original: ing.original,
+          name: ing.name,
+          amount: ing.amount,
+          unit: ing.unit,
+        })),
+        instructions: initialData.analyzedInstructions.flatMap(group =>
+          group.steps.map(step => ({
+            stepNumber: step.number,
+            stepText: step.step,
+            instructionGroup: group.name !== "Instructions" ? group.name : "",
+          }))
+        ),
+      });
+
+      // Set existing images
+      if (initialData.images && initialData.images.length > 0) {
+        setExistingImages(initialData.images);
+      }
+    }
+  }, [initialData, mode]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -35,7 +72,24 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
     }
   };
 
+  const removeNewImage = (index: number) => {
+    const newFiles = formData.imageFiles?.filter((_, i) => i !== index) || [];
+    const newPreviews = previews.filter((_, i) => i !== index);
+
+    setFormData({
+      ...formData,
+      imageFiles: newFiles
+    });
+    setPreviews(newPreviews);
+  };
+
+  const removeExistingImage = (index: number) => {
+    const newExistingImages = existingImages.filter((_, i) => i !== index);
+    setExistingImages(newExistingImages);
+  };
+
   const mealTypes = [
+
     "Main Course",
     "Side Dish",
     "Dessert",
@@ -54,7 +108,10 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      existingImages: existingImages, // Include the current state of existing images
+    });
   };
 
   const addIngredient = () => {
@@ -211,17 +268,56 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
               onChange={handleFileChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {existingImages.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Existing Images:</p>
+                <div className="flex gap-4 overflow-x-auto pb-4">
+                  {existingImages.map((src, idx) => (
+                    <div key={idx} className="flex-shrink-0 relative w-40 h-40 group">
+                      <img
+                        src={src}
+                        alt={`Existing ${idx}`}
+                        className="w-full h-full object-cover rounded-md shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(idx)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        title="Remove image"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {previews.length > 0 && (
-              <div className="mt-4 flex gap-4 overflow-x-auto pb-4">
-                {previews.map((src, idx) => (
-                  <div key={idx} className="flex-shrink-0 relative w-40 h-40">
-                    <img
-                      src={src}
-                      alt={`Preview ${idx}`}
-                      className="w-full h-full object-cover rounded-md shadow-sm"
-                    />
-                  </div>
-                ))}
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">New Images to Add:</p>
+                <div className="flex gap-4 overflow-x-auto pb-4">
+                  {previews.map((src, idx) => (
+                    <div key={idx} className="flex-shrink-0 relative w-40 h-40 group">
+                      <img
+                        src={src}
+                        alt={`Preview ${idx}`}
+                        className="w-full h-full object-cover rounded-md shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeNewImage(idx)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        title="Remove image"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -347,7 +443,9 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit, isLoading }) => {
           disabled={isLoading}
           className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
         >
-          {isLoading ? "Creating..." : "Create Recipe"}
+          {isLoading
+            ? (mode === "edit" ? "Updating..." : "Creating...")
+            : (mode === "edit" ? "Update Recipe" : "Create Recipe")}
         </button>
       </div>
     </form>

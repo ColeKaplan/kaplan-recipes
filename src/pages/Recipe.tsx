@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "react-query";
 import useFetchRecipe from "../hooks/useFetchRecipe";
 import { supabase } from "../lib/supabase";
@@ -9,10 +9,12 @@ import Footer from "../components/Footer";
 
 const Recipe: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: recipe, isLoading, isError } = useFetchRecipe(id);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   const handleRate = async (rating: number) => {
     if (!recipe) return;
@@ -58,6 +60,14 @@ const Recipe: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Check if user is logged in
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+
+    checkAuth();
   }, []);
 
   if (isLoading) {
@@ -149,6 +159,18 @@ const Recipe: React.FC = () => {
           <div className="w-full lg:w-1/2 justify-center text-center align-center">
             {/* Recipe title */}
             <h1 className="text-3xl font-bold md:mb-5 mb-2">{recipe.title}</h1>
+
+            {/* Edit button for logged-in users */}
+            {isLoggedIn && (
+              <div className="mb-4">
+                <button
+                  onClick={() => navigate(`/edit-recipe/${id}`)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
+                >
+                  Edit Recipe
+                </button>
+              </div>
+            )}
 
             {/* Rating */}
             <div className="flex items-center mb-6 justify-center">
