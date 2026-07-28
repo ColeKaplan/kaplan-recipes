@@ -22,6 +22,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+ecosystem.config.js
 .env
 .vscode
 .vercel
