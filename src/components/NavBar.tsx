@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 
 const NavBar: React.FC = () => {
 
@@ -8,19 +8,10 @@ const NavBar: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data }) => {
-      setIsAdmin(!!data.session);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdmin(!!session);
-    });
-
-    return () => subscription.unsubscribe();
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      api.auth.getUser(token).then(({ user }) => setIsAdmin(!!user));
+    }
   }, []);
 
   return (

@@ -1,16 +1,7 @@
 import { useMutation, useQueryClient } from "react-query";
 import { RecipeFormData } from "../types/recipe";
-import { supabase } from "../lib/supabase";
 import { Recipe } from "../types/recipe";
-import { Database } from "../types/database";
-import { cleanupRemovedImages } from "../utils/storageUtils";
-
-type RecipeRow = Database["public"]["Tables"]["recipes"]["Row"];
-type RecipeUpdate = Database["public"]["Tables"]["recipes"]["Update"];
-type IngredientRow = Database["public"]["Tables"]["ingredients"]["Row"];
-type IngredientInsert = Database["public"]["Tables"]["ingredients"]["Insert"];
-type InstructionRow = Database["public"]["Tables"]["instructions"]["Row"];
-type InstructionInsert = Database["public"]["Tables"]["instructions"]["Insert"];
+import { api } from "../lib/api";
 
 interface UpdateRecipeResponse {
     recipe: Recipe;
@@ -27,176 +18,82 @@ const useUpdateRecipe = () => {
 
     return useMutation<UpdateRecipeResponse, Error, UpdateRecipeParams>(
         async ({ recipeId, formData }: UpdateRecipeParams) => {
-            // Fetch the original recipe to get current images for cleanup
-            const { data: originalRecipe } = await supabase
-                .from("recipes")
-                .select("images")
-                .eq("id", recipeId)
-                .single<RecipeRow>();
-
+            // Fetch original recipe images for cleanup comparison
+            const { recipe: originalRecipe } = await api.recipes.getById(recipeId);
             const originalImages = originalRecipe?.images as string[] | null;
 
-            // Use existing images from formData (which may have been modified by user deletions)
             const existingImages = formData.existingImages || [];
 
-            // Upload new images if present
+            // Upload new images via backend
             let uploadedImageUrls: string[] = [];
             if (formData.imageFiles && formData.imageFiles.length > 0) {
-                for (const file of formData.imageFiles) {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Math.random()}.${fileExt}`;
-                    const filePath = `${fileName}`;
-
-                    const { error: uploadError } = await supabase.storage
-                        .from('recipe-images')
-                        .upload(filePath, file);
-
-                    if (uploadError) {
-                        console.error('Error uploading image:', uploadError);
-                        continue;
-                    }
-
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('recipe-images')
-                        .getPublicUrl(filePath);
-
-                    uploadedImageUrls.push(publicUrl);
-                }
+                const { urls } = await api.images.upload(formData.imageFiles);
+                uploadedImageUrls = urls;
             }
 
-            // Combine existing images (after deletions) with new uploads
             const allImages = [...existingImages, ...uploadedImageUrls];
             const mainImageUrl = allImages.length > 0 ? allImages[0] : (formData.imageUrl || null);
 
-            // Clean up removed images from storage
-            await cleanupRemovedImages(originalImages, allImages);
-
-            // Update recipe
-            const recipeUpdate: RecipeUpdate = {
-                title: formData.title,
-                summary: formData.summary || null,
-                ready_in_minutes: formData.readyInMinutes,
-                servings: formData.servings,
-                image_url: mainImageUrl,
-                meal_type: formData.mealType || null,
-                images: allImages.length > 0 ? allImages : null,
-            };
-
-            const { data: recipe, error: recipeError } = await (supabase
-                .from("recipes") as any)
-                .update(recipeUpdate)
-                .eq("id", recipeId)
-                .select()
-                .single();
-
-            const typedRecipe = recipe as RecipeRow | null;
-
-            if (recipeError) {
-                throw recipeError;
-            }
-
-            if (!typedRecipe) {
-                throw new Error("Failed to update recipe");
-            }
-
-            // Delete existing ingredients and instructions
-            await supabase.from("ingredients").delete().eq("recipe_id", recipeId);
-            await supabase.from("instructions").delete().eq("recipe_id", recipeId);
-
-            // Insert new ingredients
-            if (formData.ingredients.length > 0) {
-                const ingredientsToInsert: IngredientInsert[] = formData.ingredients.map(
-                    (ing, index) => ({
-                        recipe_id: recipeId,
-                        name: ing.name,
-                        amount: ing.amount,
-                        unit: ing.unit,
-                        original: ing.original,
-                        order_index: index,
-                    })
-                );
-
-                const { error: ingredientsError } = await supabase
-                    .from("ingredients")
-                    .insert(ingredientsToInsert as any);
-
-                if (ingredientsError) {
-                    throw ingredientsError;
+            // Clean up removed images via backend
+            if (originalImages && originalImages.length > 0) {
+                const newSet = new Set(allImages);
+                const removed = originalImages.filter((url) => !newSet.has(url));
+                if (removed.length > 0) {
+                    await api.images.delete(removed);
                 }
             }
 
-            // Insert new instructions
-            if (formData.instructions.length > 0) {
-                const instructionsToInsert: InstructionInsert[] = formData.instructions.map((inst) => ({
-                    recipe_id: recipeId,
+            // Update recipe via backend
+            const { id } = await api.recipes.update(recipeId, {
+                recipeData: {
+                    title: formData.title,
+                    summary: formData.summary || null,
+                    ready_in_minutes: formData.readyInMinutes,
+                    servings: formData.servings,
+                    image_url: mainImageUrl,
+                    meal_type: formData.mealType || null,
+                    images: allImages.length > 0 ? allImages : null,
+                },
+                ingredients: formData.ingredients.map((ing, index) => ({
+                    name: ing.name,
+                    amount: ing.amount,
+                    unit: ing.unit,
+                    original: ing.original,
+                    order_index: index,
+                })),
+                instructions: formData.instructions.map((inst) => ({
                     step_number: inst.stepNumber,
                     step_text: inst.stepText,
                     instruction_group: inst.instructionGroup || null,
-                }));
+                })),
+            });
 
-                const { error: instructionsError } = await supabase
-                    .from("instructions")
-                    .insert(instructionsToInsert as any);
+            // Fetch and return the complete updated recipe
+            const { recipe, ingredients, instructions } = await api.recipes.getById(id);
 
-                if (instructionsError) {
-                    throw instructionsError;
-                }
-            }
-
-            // Fetch the complete recipe to return
-            const { data: ingredients } = await supabase
-                .from("ingredients")
-                .select("*")
-                .eq("recipe_id", recipeId)
-                .order("order_index", { ascending: true });
-
-            const { data: instructions } = await supabase
-                .from("instructions")
-                .select("*")
-                .eq("recipe_id", recipeId)
-                .order("step_number", { ascending: true });
-
-            // Group instructions
-            const typedInstructions = (instructions || []) as InstructionRow[];
-            const typedIngredients = (ingredients || []) as IngredientRow[];
-            const groupedInstructions = typedInstructions.reduce(
-                (acc, instruction) => {
-                    const groupName = instruction.instruction_group || "Instructions";
-                    if (!acc[groupName]) {
-                        acc[groupName] = [];
-                    }
-                    acc[groupName].push({
-                        number: instruction.step_number,
-                        step: instruction.step_text,
-                        instruction_group: instruction.instruction_group || undefined,
-                    });
+            const groupedInstructions = (instructions || []).reduce(
+                (acc: Record<string, Array<{ number: number; step: string; instruction_group?: string }>>, inst: any) => {
+                    const groupName = inst.instruction_group || "Instructions";
+                    if (!acc[groupName]) acc[groupName] = [];
+                    acc[groupName].push({ number: inst.step_number, step: inst.step_text, instruction_group: inst.instruction_group || undefined });
                     return acc;
                 },
-                {} as Record<
-                    string,
-                    Array<{ number: number; step: string; instruction_group?: string }>
-                >
+                {}
             );
 
-            const analyzedInstructions = Object.entries(groupedInstructions).map(
-                ([name, steps]) => ({
-                    name,
-                    steps: steps.map((step) => ({
-                        number: step.number,
-                        step: step.step,
-                        instruction_group: step.instruction_group,
-                    })),
-                })
-            );
+            const analyzedInstructions = Object.entries(groupedInstructions).map(([name, steps]) => ({
+                name,
+                steps: steps.map((s) => ({ number: s.number, step: s.step, instruction_group: s.instruction_group })),
+            }));
 
             const completeRecipe: Recipe = {
-                id: typedRecipe.id,
-                title: typedRecipe.title,
-                image: typedRecipe.image_url,
-                readyInMinutes: typedRecipe.ready_in_minutes,
-                servings: typedRecipe.servings,
-                summary: typedRecipe.summary || undefined,
-                extendedIngredients: typedIngredients.map((ing) => ({
+                id: recipe.id,
+                title: recipe.title,
+                image: recipe.image_url,
+                readyInMinutes: recipe.ready_in_minutes,
+                servings: recipe.servings,
+                summary: recipe.summary || undefined,
+                extendedIngredients: (ingredients || []).map((ing: any) => ({
                     id: ing.id,
                     original: ing.original,
                     name: ing.name,
@@ -205,21 +102,18 @@ const useUpdateRecipe = () => {
                     order_index: ing.order_index,
                 })),
                 analyzedInstructions,
-                mealType: typedRecipe.meal_type || undefined,
-                userId: typedRecipe.user_id || undefined,
-                createdAt: typedRecipe.created_at,
-                updatedAt: typedRecipe.updated_at,
-                images: typedRecipe.images as string[] || null,
+                mealType: recipe.meal_type || undefined,
+                userId: recipe.user_id || undefined,
+                createdAt: recipe.created_at,
+                updatedAt: recipe.updated_at,
+                images: recipe.images as string[] || null,
             };
 
-            return {
-                recipe: completeRecipe,
-                success: true,
-            };
+            return { recipe: completeRecipe, success: true };
         },
         {
+            retry: false,
             onSuccess: (_, variables) => {
-                // Invalidate queries to refetch data
                 queryClient.invalidateQueries(["recipes"]);
                 queryClient.invalidateQueries(["recipe", variables.recipeId]);
                 queryClient.invalidateQueries(["popularFood"]);

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
 
@@ -16,15 +16,12 @@ const Login: React.FC = () => {
         setError(null);
         setSuccess(false);
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            setError(error.message);
-        } else {
+        try {
+            const { access_token } = await api.auth.login(email, password);
+            localStorage.setItem("access_token", access_token);
             setSuccess(true);
+        } catch (err: any) {
+            setError(err.message || "Login failed");
         }
 
         setLoading(false);

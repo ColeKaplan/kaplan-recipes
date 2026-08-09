@@ -1,8 +1,5 @@
 import { useQuery } from "react-query";
-import { supabase } from "../lib/supabase";
-import { Database } from "../types/database";
-
-type CommentRow = Database["public"]["Tables"]["recipe_comments"]["Row"];
+import { api } from "../lib/api";
 
 export interface RecipeComment {
     id: string;
@@ -17,49 +14,25 @@ export interface RecipeComment {
 
 const useRecipeComments = (recipeId: string | undefined) => {
     const fetchComments = async (): Promise<RecipeComment[]> => {
-        if (!recipeId) {
-            throw new Error("Recipe ID is required");
-        }
+        if (!recipeId) throw new Error("Recipe ID is required");
 
-        // Fetch all comments for this recipe
-        const { data: comments, error } = await supabase
-            .from("recipe_comments")
-            .select("*")
-            .eq("recipe_id", recipeId)
-            .order("created_at", { ascending: true });
+        const comments = await api.comments.getByRecipe(recipeId);
+        if (!comments) return [];
 
-        if (error) {
-            throw error;
-        }
-
-        if (!comments) {
-            return [];
-        }
-
-        // Organize comments into a tree structure
+        // Organize into tree structure (same logic as before)
         const commentMap = new Map<string, RecipeComment>();
         const topLevelComments: RecipeComment[] = [];
 
-        // First pass: create all comment objects
-        comments.forEach((comment: CommentRow) => {
-            commentMap.set(comment.id, {
-                ...comment,
-                replies: [],
-            });
+        comments.forEach((comment: any) => {
+            commentMap.set(comment.id, { ...comment, replies: [] });
         });
 
-        // Second pass: organize into tree structure
-        comments.forEach((comment: CommentRow) => {
+        comments.forEach((comment: any) => {
             const commentObj = commentMap.get(comment.id)!;
-
             if (comment.parent_comment_id) {
-                // This is a reply
                 const parent = commentMap.get(comment.parent_comment_id);
-                if (parent) {
-                    parent.replies!.push(commentObj);
-                }
+                if (parent) parent.replies!.push(commentObj);
             } else {
-                // This is a top-level comment
                 topLevelComments.push(commentObj);
             }
         });
@@ -72,8 +45,8 @@ const useRecipeComments = (recipeId: string | undefined) => {
         fetchComments,
         {
             refetchOnWindowFocus: false,
-            staleTime: 30000, // 30 seconds
-            cacheTime: 300000, // 5 minutes
+            staleTime: 30000,
+            cacheTime: 300000,
             enabled: !!recipeId,
         }
     );

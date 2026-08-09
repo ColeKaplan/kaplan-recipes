@@ -1,16 +1,7 @@
 import { useMutation, useQueryClient } from "react-query";
 import { RecipeFormData } from "../types/recipe";
-import { supabase } from "../lib/supabase";
 import { Recipe } from "../types/recipe";
-import { Database } from "../types/database";
-import { deleteImagesFromStorage } from "../utils/storageUtils";
-
-type RecipeRow = Database["public"]["Tables"]["recipes"]["Row"];
-type RecipeInsert = Database["public"]["Tables"]["recipes"]["Insert"];
-type IngredientRow = Database["public"]["Tables"]["ingredients"]["Row"];
-type IngredientInsert = Database["public"]["Tables"]["ingredients"]["Insert"];
-type InstructionRow = Database["public"]["Tables"]["instructions"]["Row"];
-type InstructionInsert = Database["public"]["Tables"]["instructions"]["Insert"];
+import { api } from "../lib/api";
 
 interface CreateRecipeResponse {
   recipe: Recipe;
@@ -22,166 +13,63 @@ const useCreateRecipe = () => {
 
   return useMutation<CreateRecipeResponse, Error, RecipeFormData>(
     async (formData: RecipeFormData) => {
-      // Get current user (if using auth)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Get current user from backend
+      const token = localStorage.getItem("access_token") || undefined;
+      const { user } = await api.auth.getUser(token);
 
-      // Upload images if present
+      // Upload images via backend
       let uploadedImageUrls: string[] = [];
       if (formData.imageFiles && formData.imageFiles.length > 0) {
-        for (const file of formData.imageFiles) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random()}.${fileExt}`;
-          const filePath = `${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('recipe-images')
-            .upload(filePath, file);
-
-          if (uploadError) {
-            console.error('Error uploading image:', uploadError);
-            // Continue with other images or fail? Let's continue but log it.
-            continue;
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('recipe-images')
-            .getPublicUrl(filePath);
-
-          uploadedImageUrls.push(publicUrl);
-        }
+        const { urls } = await api.images.upload(formData.imageFiles);
+        uploadedImageUrls = urls;
       }
 
-      // If manual URL string was provided and no files, use that.
-      // If files provided, use first file as main image.
       const mainImageUrl = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : (formData.imageUrl || null);
+      const allImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined;
 
-      // Insert recipe
-      const recipeInsert: RecipeInsert & { images?: string[] } = {
-        title: formData.title,
-        summary: formData.summary || null,
-        ready_in_minutes: formData.readyInMinutes,
-        servings: formData.servings,
-        image_url: mainImageUrl,
-        meal_type: formData.mealType || null,
-        user_id: user?.id || null,
-        // We need to cast this later or update type definition, but valid for Supabase if column exists
-        images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined,
-      };
-
-      const { data: recipe, error: recipeError } = await supabase
-        .from("recipes")
-        .insert(recipeInsert as any)
-        .select()
-        .single<RecipeRow>();
-
-      if (recipeError) {
-        throw recipeError;
-      }
-
-      if (!recipe) {
-        throw new Error("Failed to create recipe");
-      }
-
-      // Insert ingredients
-      if (formData.ingredients.length > 0) {
-        const ingredientsToInsert: IngredientInsert[] = formData.ingredients.map(
-          (ing, index) => ({
-            recipe_id: recipe.id,
-            name: ing.name,
-            amount: ing.amount,
-            unit: ing.unit,
-            original: ing.original,
-            order_index: index,
-          })
-        );
-
-        const { error: ingredientsError } = await supabase
-          .from("ingredients")
-          .insert(ingredientsToInsert as any);
-
-        if (ingredientsError) {
-          // Rollback recipe if ingredients fail
-          await supabase.from("recipes").delete().eq("id", recipe.id);
-          // Clean up uploaded images from storage
-          if (uploadedImageUrls.length > 0) {
-            await deleteImagesFromStorage(uploadedImageUrls);
-          }
-          throw ingredientsError;
-        }
-      }
-
-      // Insert instructions
-      if (formData.instructions.length > 0) {
-        const instructionsToInsert: InstructionInsert[] = formData.instructions.map((inst) => ({
-          recipe_id: recipe.id,
+      // Create recipe on backend
+      const { id: recipeId } = await api.recipes.create({
+        recipeData: {
+          title: formData.title,
+          summary: formData.summary || null,
+          ready_in_minutes: formData.readyInMinutes,
+          servings: formData.servings,
+          image_url: mainImageUrl,
+          meal_type: formData.mealType || null,
+          images: allImages,
+        },
+        ingredients: formData.ingredients.map((ing, index) => ({
+          name: ing.name,
+          amount: ing.amount,
+          unit: ing.unit,
+          original: ing.original,
+          order_index: index,
+        })),
+        instructions: formData.instructions.map((inst) => ({
           step_number: inst.stepNumber,
           step_text: inst.stepText,
           instruction_group: inst.instructionGroup || null,
-        }));
-
-        const { error: instructionsError } = await supabase
-          .from("instructions")
-          .insert(instructionsToInsert as any);
-
-        if (instructionsError) {
-          // Rollback recipe and ingredients if instructions fail
-          await supabase.from("ingredients").delete().eq("recipe_id", recipe.id);
-          await supabase.from("recipes").delete().eq("id", recipe.id);
-          // Clean up uploaded images from storage
-          if (uploadedImageUrls.length > 0) {
-            await deleteImagesFromStorage(uploadedImageUrls);
-          }
-          throw instructionsError;
-        }
-      }
+        })),
+        userId: user?.id || null,
+      });
 
       // Fetch the complete recipe to return
-      const { data: ingredients } = await supabase
-        .from("ingredients")
-        .select("*")
-        .eq("recipe_id", recipe.id)
-        .order("order_index", { ascending: true });
+      const { recipe, ingredients, instructions } = await api.recipes.getById(recipeId);
 
-      const { data: instructions } = await supabase
-        .from("instructions")
-        .select("*")
-        .eq("recipe_id", recipe.id)
-        .order("step_number", { ascending: true });
-
-      // Group instructions
-      const typedInstructions = (instructions || []) as InstructionRow[];
-      const typedIngredients = (ingredients || []) as IngredientRow[];
-      const groupedInstructions = typedInstructions.reduce(
-        (acc, instruction) => {
-          const groupName = instruction.instruction_group || "Instructions";
-          if (!acc[groupName]) {
-            acc[groupName] = [];
-          }
-          acc[groupName].push({
-            number: instruction.step_number,
-            step: instruction.step_text,
-            instruction_group: instruction.instruction_group || undefined,
-          });
+      const groupedInstructions = (instructions || []).reduce(
+        (acc: Record<string, Array<{ number: number; step: string; instruction_group?: string }>>, inst: any) => {
+          const groupName = inst.instruction_group || "Instructions";
+          if (!acc[groupName]) acc[groupName] = [];
+          acc[groupName].push({ number: inst.step_number, step: inst.step_text, instruction_group: inst.instruction_group || undefined });
           return acc;
         },
-        {} as Record<
-          string,
-          Array<{ number: number; step: string; instruction_group?: string }>
-        >
+        {}
       );
 
-      const analyzedInstructions = Object.entries(groupedInstructions).map(
-        ([name, steps]) => ({
-          name,
-          steps: steps.map((step) => ({
-            number: step.number,
-            step: step.step,
-            instruction_group: step.instruction_group,
-          })),
-        })
-      );
+      const analyzedInstructions = Object.entries(groupedInstructions).map(([name, steps]) => ({
+        name,
+        steps: steps.map((s) => ({ number: s.number, step: s.step, instruction_group: s.instruction_group })),
+      }));
 
       const completeRecipe: Recipe = {
         id: recipe.id,
@@ -190,7 +78,7 @@ const useCreateRecipe = () => {
         readyInMinutes: recipe.ready_in_minutes,
         servings: recipe.servings,
         summary: recipe.summary || undefined,
-        extendedIngredients: typedIngredients.map((ing) => ({
+        extendedIngredients: (ingredients || []).map((ing: any) => ({
           id: ing.id,
           original: ing.original,
           name: ing.name,
@@ -205,14 +93,10 @@ const useCreateRecipe = () => {
         updatedAt: recipe.updated_at,
       };
 
-      return {
-        recipe: completeRecipe,
-        success: true,
-      };
+      return { recipe: completeRecipe, success: true };
     },
     {
       onSuccess: () => {
-        // Invalidate queries to refetch data
         queryClient.invalidateQueries(["recipes"]);
         queryClient.invalidateQueries(["popularFood"]);
       },

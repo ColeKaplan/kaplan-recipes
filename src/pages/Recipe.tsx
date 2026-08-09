@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "react-query";
 import useFetchRecipe from "../hooks/useFetchRecipe";
 import useDeleteRecipe from "../hooks/useDeleteRecipe";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 import LoadIcon from "../img/icon/loading.gif";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
@@ -44,19 +44,15 @@ const Recipe: React.FC = () => {
 
     const updates: any = { aggregate_rating: newRating, rating_count: newCount };
 
-    const { error } = await (supabase
-      .from("recipes") as any)
-      .update(updates)
-      .eq("id", recipe.id);
-
-    if (!error) {
+    try {
+      await api.recipes.patch(recipe.id, updates);
       setUserRating(rating);
       queryClient.setQueryData(["recipe", id], {
         ...recipe,
         aggregateRating: newRating,
         ratingCount: newCount,
       });
-    } else {
+    } catch (error) {
       console.error("Error updating rating:", error);
     }
   };
@@ -83,13 +79,10 @@ const Recipe: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // Check if user is logged in
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-    };
-
-    checkAuth();
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      api.auth.getUser(token).then(({ user }) => setIsLoggedIn(!!user));
+    }
   }, []);
 
   if (isLoading) {

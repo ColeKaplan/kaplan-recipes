@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "react-query";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 
 interface DeleteCommentParams {
     commentId: string;
@@ -9,32 +9,12 @@ interface DeleteCommentParams {
 const useDeleteComment = () => {
     const queryClient = useQueryClient();
 
-    const deleteComment = async ({ commentId, recipeId }: DeleteCommentParams): Promise<void> => {
-        // Delete the comment and all its replies (cascade should handle this if set up in DB)
-        // But we'll be explicit and delete replies first
-        const { error: repliesError } = await supabase
-            .from("recipe_comments")
-            .delete()
-            .eq("parent_comment_id", commentId);
-
-        if (repliesError) {
-            throw repliesError;
-        }
-
-        // Delete the comment itself
-        const { error } = await supabase
-            .from("recipe_comments")
-            .delete()
-            .eq("id", commentId);
-
-        if (error) {
-            throw error;
-        }
+    const deleteComment = async ({ commentId }: DeleteCommentParams): Promise<void> => {
+        await api.comments.delete(commentId);
     };
 
     return useMutation(deleteComment, {
         onSuccess: (_, variables) => {
-            // Invalidate and refetch comments for this recipe
             queryClient.invalidateQueries(["recipe-comments", variables.recipeId]);
         },
     });

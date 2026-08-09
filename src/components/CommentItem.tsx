@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { RecipeComment } from "../hooks/useRecipeComments";
 import useAddComment from "../hooks/useAddComment";
 import useDeleteComment from "../hooks/useDeleteComment";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 
 interface CommentItemProps {
     comment: RecipeComment;
@@ -22,12 +22,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, recipeId, depth = 0 
     const { mutate: deleteComment, isLoading: isDeleting } = useDeleteComment();
 
     useEffect(() => {
-        // Check if user is logged in (admin check)
-        const checkAuth = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setIsAdmin(!!user);
-        };
-        checkAuth();
+        const token = localStorage.getItem("access_token");
+        if (token) {
+            api.auth.getUser(token).then(({ user }) => setIsAdmin(!!user));
+        }
     }, []);
 
     const handleSubmitReply = (e: React.FormEvent) => {

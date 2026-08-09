@@ -1,8 +1,5 @@
 import { useMutation, useQueryClient } from "react-query";
-import { supabase } from "../lib/supabase";
-import { Database } from "../types/database";
-
-type CommentInsert = Database["public"]["Tables"]["recipe_comments"]["Insert"];
+import { api } from "../lib/api";
 
 interface AddCommentParams {
     recipe_id: string;
@@ -15,25 +12,11 @@ const useAddComment = () => {
     const queryClient = useQueryClient();
 
     const addComment = async (params: AddCommentParams): Promise<void> => {
-        const commentData: CommentInsert = {
-            recipe_id: params.recipe_id,
-            comment_text: params.comment_text,
-            author_name: params.author_name || null,
-            parent_comment_id: params.parent_comment_id || null,
-        };
-
-        const { error } = await (supabase
-            .from("recipe_comments") as any)
-            .insert(commentData);
-
-        if (error) {
-            throw error;
-        }
+        await api.comments.add(params);
     };
 
     return useMutation(addComment, {
         onSuccess: (_, variables) => {
-            // Invalidate and refetch comments for this recipe
             queryClient.invalidateQueries(["recipe-comments", variables.recipe_id]);
         },
     });
