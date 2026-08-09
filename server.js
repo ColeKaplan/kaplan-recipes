@@ -319,7 +319,7 @@ app.get('/api/auth/user', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 app.use(express.static(path.join(__dirname, 'build')));
-app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
+app.get('/{*splat}', (_req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 
 app.listen(PORT, () => {
   console.log(`[server] http://localhost:${PORT}`);
