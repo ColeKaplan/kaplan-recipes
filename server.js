@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 
 const supabase = createClient(
   process.env.SUPABASE_URL || 'http://localhost:8001',
-  process.env.SUPABASE_ANON_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''
 );
 
 app.use(express.json({ limit: '10mb' }));
@@ -132,8 +132,26 @@ app.post('/api/recipes', async (req, res) => {
   }
 });
 
-// PUT /api/recipes/:id — full update (recipe + replace ingredients/instructions)
-app.put('/api/recipes/:id', async (req, res) => {
+async function requireAuth(req, res, next) {
+  try {
+    const auth = req.headers.authorization;
+    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: Admin authentication required' });
+    }
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired admin session' });
+    }
+    req.user = user;
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+// PUT /api/recipes/:id — full update (recipe + replace ingredients/instructions) [Admin only]
+app.put('/api/recipes/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { recipeData, ingredients, instructions } = req.body;
@@ -166,7 +184,7 @@ app.put('/api/recipes/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/recipes/:id — partial update (e.g. rating)
+// PATCH /api/recipes/:id — partial update (e.g. rating) [Public]
 app.patch('/api/recipes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -179,8 +197,8 @@ app.patch('/api/recipes/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/recipes/:id — delete with cascading cleanup
-app.delete('/api/recipes/:id', async (req, res) => {
+// DELETE /api/recipes/:id — delete with cascading cleanup [Admin only]
+app.delete('/api/recipes/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { data: recipe } = await supabase
@@ -240,7 +258,7 @@ app.post('/api/comments', async (req, res) => {
   }
 });
 
-app.delete('/api/comments/:id', async (req, res) => {
+app.delete('/api/comments/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     await supabase.from('recipe_comments').delete().eq('parent_comment_id', id);
@@ -317,7 +335,7 @@ app.post('/api/images/upload', upload.array('images'), async (req, res) => {
   }
 });
 
-app.post('/api/images/delete', async (req, res) => {
+app.post('/api/images/delete', requireAuth, async (req, res) => {
   try {
     const { urls } = req.body;
     if (!urls || urls.length === 0) return res.json({ deleted: 0 });
