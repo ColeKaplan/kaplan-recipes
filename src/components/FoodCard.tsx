@@ -19,7 +19,7 @@ const FoodCard: React.FC<FoodCardProps> = ({ recipe }) => {
 
   const imageUrl =
     (recipe.image &&
-      (isValidUrl(recipe.image)
+      (isValidUrl(recipe.image) || recipe.image.startsWith('/')
         ? recipe.image
         : `https://spoonacular.com/recipeImages/${recipe.image}`)) ||
     "https://via.placeholder.com/300x150?text=No%20Image";

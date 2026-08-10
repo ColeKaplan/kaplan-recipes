@@ -11,9 +11,11 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const res = await fetch(path, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders, ...options.headers },
   });
   if (!res.ok) {
     let message = res.statusText;
@@ -24,7 +26,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 async function upload<T>(path: string, formData: FormData): Promise<T> {
-  const res = await fetch(path, { method: 'POST', body: formData });
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(path, {
+    method: 'POST',
+    body: formData,
+    headers: { ...authHeaders },
+  });
   if (!res.ok) {
     let message = res.statusText;
     try { const body = await res.json(); message = body.error || message; } catch {}

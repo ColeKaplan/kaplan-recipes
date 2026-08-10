@@ -1,38 +1,72 @@
--- SQL script to update RLS policies to allow unauthenticated recipe creation
--- Run this in your Supabase SQL Editor if you've already set up the database
+-- SQL script to fix RLS policies for recipes, ingredients, instructions, and comments
+-- Run this in your Supabase SQL Editor
 
--- Drop existing INSERT policies
+-- 1. DROP ALL OLD POLICIES
 DROP POLICY IF EXISTS "Users can insert their own recipes" ON recipes;
+DROP POLICY IF EXISTS "Anyone can insert recipes" ON recipes;
+DROP POLICY IF EXISTS "Users can update their own recipes" ON recipes;
+DROP POLICY IF EXISTS "Users can delete their own recipes" ON recipes;
+DROP POLICY IF EXISTS "Recipes are viewable by everyone" ON recipes;
+
+DROP POLICY IF EXISTS "Ingredients are viewable by everyone" ON ingredients;
 DROP POLICY IF EXISTS "Users can insert ingredients for their recipes" ON ingredients;
+DROP POLICY IF EXISTS "Anyone can insert ingredients" ON ingredients;
+DROP POLICY IF EXISTS "Users can update ingredients for their recipes" ON ingredients;
+DROP POLICY IF EXISTS "Users can delete ingredients for their recipes" ON ingredients;
+
+DROP POLICY IF EXISTS "Instructions are viewable by everyone" ON instructions;
 DROP POLICY IF EXISTS "Users can insert instructions for their recipes" ON instructions;
+DROP POLICY IF EXISTS "Anyone can insert instructions" ON instructions;
+DROP POLICY IF EXISTS "Users can update instructions for their recipes" ON instructions;
+DROP POLICY IF EXISTS "Users can delete instructions for their recipes" ON instructions;
 
--- Create new policies that allow anyone (including unauthenticated users) to insert
+-- 2. RECIPES POLICIES
+CREATE POLICY "Recipes are viewable by everyone"
+  ON recipes FOR SELECT
+  USING (true);
 
--- Recipes: Allow anyone to insert recipes
 CREATE POLICY "Anyone can insert recipes"
   ON recipes FOR INSERT
   WITH CHECK (true);
 
--- Ingredients: Allow anyone to insert ingredients
+CREATE POLICY "Anyone can update recipes"
+  ON recipes FOR UPDATE
+  USING (true);
+
+CREATE POLICY "Anyone can delete recipes"
+  ON recipes FOR DELETE
+  USING (true);
+
+-- 3. INGREDIENTS POLICIES (Fixes ingredient duplication on edit!)
+CREATE POLICY "Ingredients are viewable by everyone"
+  ON ingredients FOR SELECT
+  USING (true);
+
 CREATE POLICY "Anyone can insert ingredients"
   ON ingredients FOR INSERT
   WITH CHECK (true);
 
--- Instructions: Allow anyone to insert instructions
+CREATE POLICY "Anyone can update ingredients"
+  ON ingredients FOR UPDATE
+  USING (true);
+
+CREATE POLICY "Anyone can delete ingredients"
+  ON ingredients FOR DELETE
+  USING (true);
+
+-- 4. INSTRUCTIONS POLICIES
+CREATE POLICY "Instructions are viewable by everyone"
+  ON instructions FOR SELECT
+  USING (true);
+
 CREATE POLICY "Anyone can insert instructions"
   ON instructions FOR INSERT
   WITH CHECK (true);
 
--- Optional: Update UPDATE and DELETE policies to allow updates/deletes for recipes with null user_id
--- (Uncomment these if you want anyone to be able to update/delete recipes they created while unauthenticated)
+CREATE POLICY "Anyone can update instructions"
+  ON instructions FOR UPDATE
+  USING (true);
 
--- DROP POLICY IF EXISTS "Users can update their own recipes" ON recipes;
--- DROP POLICY IF EXISTS "Users can delete their own recipes" ON recipes;
--- 
--- CREATE POLICY "Users can update their own recipes"
---   ON recipes FOR UPDATE
---   USING (auth.uid() = user_id OR user_id IS NULL);
--- 
--- CREATE POLICY "Users can delete their own recipes"
---   ON recipes FOR DELETE
---   USING (auth.uid() = user_id OR user_id IS NULL);
+CREATE POLICY "Anyone can delete instructions"
+  ON instructions FOR DELETE
+  USING (true);

@@ -5,11 +5,21 @@ import { api } from "../lib/api";
  */
 export const extractFilePathFromUrl = (url: string): string | null => {
     try {
-        const urlObj = new URL(url);
-        const pathParts = urlObj.pathname.split('/');
+        if (!url) return null;
+        if (url.startsWith('/api/images/')) {
+            return url.replace('/api/images/', '');
+        }
+        const pathname = url.startsWith('http') ? new URL(url).pathname : url;
+        const pathParts = pathname.split('/');
         const publicIndex = pathParts.indexOf('public');
-        if (publicIndex === -1 || publicIndex >= pathParts.length - 2) return null;
-        return pathParts.slice(publicIndex + 2).join('/') || null;
+        if (publicIndex !== -1 && publicIndex < pathParts.length - 2) {
+            return pathParts.slice(publicIndex + 2).join('/') || null;
+        }
+        const recIdx = pathParts.indexOf('recipe-images');
+        if (recIdx !== -1 && recIdx < pathParts.length - 1) {
+            return pathParts.slice(recIdx + 1).join('/') || null;
+        }
+        return pathParts.pop() || null;
     } catch {
         return null;
     }

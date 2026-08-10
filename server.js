@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 
 const supabase = createClient(
   process.env.SUPABASE_URL || 'http://localhost:8001',
-  process.env.SUPABASE_ANON_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''
 );
 
 app.use(express.json({ limit: '10mb' }));
@@ -18,6 +18,22 @@ const upload = multer({ storage: multer.memoryStorage() });
 // ═══════════════════════════════════════════════════════════════════════════
 // RECIPES
 // ═══════════════════════════════════════════════════════════════════════════
+
+function normalizeImageUrl(url) {
+  if (!url) return url;
+  const match = url.match(/\/recipe-images\/([^?#]+)/);
+  if (match) return `/api/images/${match[1]}`;
+  return url;
+}
+
+function normalizeRecipe(recipe) {
+  if (!recipe) return recipe;
+  return {
+    ...recipe,
+    image_url: normalizeImageUrl(recipe.image_url),
+    images: Array.isArray(recipe.images) ? recipe.images.map(normalizeImageUrl) : recipe.images,
+  };
+}
 
 // GET /api/recipes — popular feed or search
 app.get('/api/recipes', async (req, res) => {
@@ -35,7 +51,7 @@ app.get('/api/recipes', async (req, res) => {
         .order('aggregate_rating', { ascending: false })
         .range(from, to);
       if (error) throw error;
-      return res.json(data || []);
+      return res.json((data || []).map(normalizeRecipe));
     }
 
     let query = supabase
@@ -50,7 +66,7 @@ app.get('/api/recipes', async (req, res) => {
     const to = from + size - 1;
     const { data, error } = await query.range(from, to);
     if (error) throw error;
-    return res.json(data || []);
+    return res.json((data || []).map(normalizeRecipe));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -70,7 +86,7 @@ app.get('/api/recipes/:id', async (req, res) => {
     if (ingredientsRes.error) throw ingredientsRes.error;
     if (instructionsRes.error) throw instructionsRes.error;
     return res.json({
-      recipe: recipeRes.data,
+      recipe: normalizeRecipe(recipeRes.data),
       ingredients: ingredientsRes.data || [],
       instructions: instructionsRes.data || [],
     });
@@ -116,8 +132,26 @@ app.post('/api/recipes', async (req, res) => {
   }
 });
 
-// PUT /api/recipes/:id — full update (recipe + replace ingredients/instructions)
-app.put('/api/recipes/:id', async (req, res) => {
+async function requireAuth(req, res, next) {
+  try {
+    const auth = req.headers.authorization;
+    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: Admin authentication required' });
+    }
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired admin session' });
+    }
+    req.user = user;
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+// PUT /api/recipes/:id — full update (recipe + replace ingredients/instructions) [Admin only]
+app.put('/api/recipes/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { recipeData, ingredients, instructions } = req.body;
@@ -150,7 +184,7 @@ app.put('/api/recipes/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/recipes/:id — partial update (e.g. rating)
+// PATCH /api/recipes/:id — partial update (e.g. rating) [Public]
 app.patch('/api/recipes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -163,8 +197,8 @@ app.patch('/api/recipes/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/recipes/:id — delete with cascading cleanup
-app.delete('/api/recipes/:id', async (req, res) => {
+// DELETE /api/recipes/:id — delete with cascading cleanup [Admin only]
+app.delete('/api/recipes/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { data: recipe } = await supabase
@@ -224,7 +258,7 @@ app.post('/api/comments', async (req, res) => {
   }
 });
 
-app.delete('/api/comments/:id', async (req, res) => {
+app.delete('/api/comments/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     await supabase.from('recipe_comments').delete().eq('parent_comment_id', id);
@@ -242,12 +276,46 @@ app.delete('/api/comments/:id', async (req, res) => {
 
 function extractFilePath(url) {
   try {
-    const parts = new URL(url).pathname.split('/');
+    if (!url) return null;
+    if (url.startsWith('/api/images/')) {
+      return url.replace('/api/images/', '');
+    }
+    const pathname = url.startsWith('http') ? new URL(url).pathname : url;
+    const parts = pathname.split('/');
     const idx = parts.indexOf('public');
-    if (idx === -1 || idx >= parts.length - 2) return null;
-    return parts.slice(idx + 2).join('/');
+    if (idx !== -1 && idx < parts.length - 2) {
+      return parts.slice(idx + 2).join('/');
+    }
+    const recIdx = parts.indexOf('recipe-images');
+    if (recIdx !== -1 && recIdx < parts.length - 1) {
+      return parts.slice(recIdx + 1).join('/');
+    }
+    return parts.pop() || null;
   } catch { return null; }
 }
+
+// GET /api/images/:filename — serve images via Supabase SDK on the server
+app.get('/api/images/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const { data, error } = await supabase.storage
+      .from('recipe-images')
+      .download(filename);
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', data.type || 'image/webp');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.send(buffer);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/images/upload', upload.array('images'), async (req, res) => {
   try {
@@ -259,8 +327,7 @@ app.post('/api/images/upload', upload.array('images'), async (req, res) => {
       const name = `${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from('recipe-images').upload(name, file.buffer, { contentType: file.mimetype });
       if (error) { console.error('Upload error:', error); continue; }
-      const { data: { publicUrl } } = supabase.storage.from('recipe-images').getPublicUrl(name);
-      urls.push(publicUrl);
+      urls.push(`/api/images/${name}`);
     }
     return res.json({ urls });
   } catch (err) {
@@ -268,7 +335,7 @@ app.post('/api/images/upload', upload.array('images'), async (req, res) => {
   }
 });
 
-app.post('/api/images/delete', async (req, res) => {
+app.post('/api/images/delete', requireAuth, async (req, res) => {
   try {
     const { urls } = req.body;
     if (!urls || urls.length === 0) return res.json({ deleted: 0 });

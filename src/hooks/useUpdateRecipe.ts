@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "react-query";
 import { RecipeFormData } from "../types/recipe";
 import { Recipe } from "../types/recipe";
 import { api } from "../lib/api";
+import { compressImages } from "../utils/imageCompression";
 
 interface UpdateRecipeResponse {
     recipe: Recipe;
@@ -24,10 +25,11 @@ const useUpdateRecipe = () => {
 
             const existingImages = formData.existingImages || [];
 
-            // Upload new images via backend
+            // Compress and upload new images via backend
             let uploadedImageUrls: string[] = [];
             if (formData.imageFiles && formData.imageFiles.length > 0) {
-                const { urls } = await api.images.upload(formData.imageFiles);
+                const compressedFiles = await compressImages(formData.imageFiles);
+                const { urls } = await api.images.upload(compressedFiles);
                 uploadedImageUrls = urls;
             }
 
