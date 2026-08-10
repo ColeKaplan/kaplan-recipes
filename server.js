@@ -19,6 +19,22 @@ const upload = multer({ storage: multer.memoryStorage() });
 // RECIPES
 // ═══════════════════════════════════════════════════════════════════════════
 
+function normalizeImageUrl(url) {
+  if (!url) return url;
+  const match = url.match(/\/recipe-images\/([^?#]+)/);
+  if (match) return `/api/images/${match[1]}`;
+  return url;
+}
+
+function normalizeRecipe(recipe) {
+  if (!recipe) return recipe;
+  return {
+    ...recipe,
+    image_url: normalizeImageUrl(recipe.image_url),
+    images: Array.isArray(recipe.images) ? recipe.images.map(normalizeImageUrl) : recipe.images,
+  };
+}
+
 // GET /api/recipes — popular feed or search
 app.get('/api/recipes', async (req, res) => {
   try {
@@ -35,7 +51,7 @@ app.get('/api/recipes', async (req, res) => {
         .order('aggregate_rating', { ascending: false })
         .range(from, to);
       if (error) throw error;
-      return res.json(data || []);
+      return res.json((data || []).map(normalizeRecipe));
     }
 
     let query = supabase
@@ -50,7 +66,7 @@ app.get('/api/recipes', async (req, res) => {
     const to = from + size - 1;
     const { data, error } = await query.range(from, to);
     if (error) throw error;
-    return res.json(data || []);
+    return res.json((data || []).map(normalizeRecipe));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -70,7 +86,7 @@ app.get('/api/recipes/:id', async (req, res) => {
     if (ingredientsRes.error) throw ingredientsRes.error;
     if (instructionsRes.error) throw instructionsRes.error;
     return res.json({
-      recipe: recipeRes.data,
+      recipe: normalizeRecipe(recipeRes.data),
       ingredients: ingredientsRes.data || [],
       instructions: instructionsRes.data || [],
     });
@@ -242,12 +258,46 @@ app.delete('/api/comments/:id', async (req, res) => {
 
 function extractFilePath(url) {
   try {
-    const parts = new URL(url).pathname.split('/');
+    if (!url) return null;
+    if (url.startsWith('/api/images/')) {
+      return url.replace('/api/images/', '');
+    }
+    const pathname = url.startsWith('http') ? new URL(url).pathname : url;
+    const parts = pathname.split('/');
     const idx = parts.indexOf('public');
-    if (idx === -1 || idx >= parts.length - 2) return null;
-    return parts.slice(idx + 2).join('/');
+    if (idx !== -1 && idx < parts.length - 2) {
+      return parts.slice(idx + 2).join('/');
+    }
+    const recIdx = parts.indexOf('recipe-images');
+    if (recIdx !== -1 && recIdx < parts.length - 1) {
+      return parts.slice(recIdx + 1).join('/');
+    }
+    return parts.pop() || null;
   } catch { return null; }
 }
+
+// GET /api/images/:filename — serve images via Supabase SDK on the server
+app.get('/api/images/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const { data, error } = await supabase.storage
+      .from('recipe-images')
+      .download(filename);
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', data.type || 'image/webp');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.send(buffer);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/images/upload', upload.array('images'), async (req, res) => {
   try {
@@ -259,8 +309,7 @@ app.post('/api/images/upload', upload.array('images'), async (req, res) => {
       const name = `${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from('recipe-images').upload(name, file.buffer, { contentType: file.mimetype });
       if (error) { console.error('Upload error:', error); continue; }
-      const { data: { publicUrl } } = supabase.storage.from('recipe-images').getPublicUrl(name);
-      urls.push(publicUrl);
+      urls.push(`/api/images/${name}`);
     }
     return res.json({ urls });
   } catch (err) {
