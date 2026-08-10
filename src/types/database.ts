@@ -13,6 +13,7 @@ export interface Database {
       recipes: {
         Row: {
           id: string
+          slug: string
           user_id: string | null
           title: string
           summary: string | null
@@ -28,6 +29,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          slug?: string
           user_id?: string | null
           title: string
           summary?: string | null
@@ -43,6 +45,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          slug?: string
           user_id?: string | null
           title?: string
           summary?: string | null

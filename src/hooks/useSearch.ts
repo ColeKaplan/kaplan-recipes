@@ -14,6 +14,7 @@ const useSearch = (
       const data = await api.recipes.search(keyword, mealType, pageNumber, pageSize);
       return (data || []).map((recipe: any) => ({
         id: recipe.id,
+        slug: recipe.slug,
         title: recipe.title,
         image: recipe.image_url,
         readyInMinutes: recipe.ready_in_minutes,

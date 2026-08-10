@@ -14,11 +14,11 @@ const CreateRecipe: React.FC = () => {
     try {
       const result = await createRecipe.mutateAsync(formData);
       if (result.success) {
-        navigate(`/recipe/${result.recipe.id}`);
+        navigate(`/recipe/${result.recipe.slug}`);
       }
     } catch (error) {
       console.error("Error creating recipe:", error);
-      alert("Failed to create recipe. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to create recipe. Please try again.");
     }
   };
 

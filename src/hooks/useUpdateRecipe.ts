@@ -11,6 +11,7 @@ interface UpdateRecipeResponse {
 
 interface UpdateRecipeParams {
     recipeId: string;
+    currentSlug: string;
     formData: RecipeFormData;
 }
 
@@ -18,9 +19,9 @@ const useUpdateRecipe = () => {
     const queryClient = useQueryClient();
 
     return useMutation<UpdateRecipeResponse, Error, UpdateRecipeParams>(
-        async ({ recipeId, formData }: UpdateRecipeParams) => {
+        async ({ recipeId, currentSlug, formData }: UpdateRecipeParams) => {
             // Fetch original recipe images for cleanup comparison
-            const { recipe: originalRecipe } = await api.recipes.getById(recipeId);
+            const { recipe: originalRecipe } = await api.recipes.getBySlug(currentSlug);
             const originalImages = originalRecipe?.images as string[] | null;
 
             const existingImages = formData.existingImages || [];
@@ -46,7 +47,7 @@ const useUpdateRecipe = () => {
             }
 
             // Update recipe via backend
-            const { id } = await api.recipes.update(recipeId, {
+            const { slug: updatedSlug } = await api.recipes.update(recipeId, {
                 recipeData: {
                     title: formData.title,
                     summary: formData.summary || null,
@@ -71,7 +72,7 @@ const useUpdateRecipe = () => {
             });
 
             // Fetch and return the complete updated recipe
-            const { recipe, ingredients, instructions } = await api.recipes.getById(id);
+            const { recipe, ingredients, instructions } = await api.recipes.getBySlug(updatedSlug);
 
             const groupedInstructions = (instructions || []).reduce(
                 (acc: Record<string, Array<{ number: number; step: string; instruction_group?: string }>>, inst: any) => {
@@ -90,6 +91,7 @@ const useUpdateRecipe = () => {
 
             const completeRecipe: Recipe = {
                 id: recipe.id,
+                slug: recipe.slug,
                 title: recipe.title,
                 image: recipe.image_url,
                 readyInMinutes: recipe.ready_in_minutes,
@@ -115,9 +117,12 @@ const useUpdateRecipe = () => {
         },
         {
             retry: false,
-            onSuccess: (_, variables) => {
+            onSuccess: (data, variables) => {
                 queryClient.invalidateQueries(["recipes"]);
-                queryClient.invalidateQueries(["recipe", variables.recipeId]);
+                queryClient.invalidateQueries(["recipe", variables.currentSlug]);
+                if (data.recipe.slug !== variables.currentSlug) {
+                    queryClient.invalidateQueries(["recipe", data.recipe.slug]);
+                }
                 queryClient.invalidateQueries(["popularFood"]);
             },
         }

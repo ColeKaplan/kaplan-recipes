@@ -22,6 +22,7 @@ export interface AnalyzedInstruction {
 
 export interface Recipe {
   id: string;
+  slug: string;
   title: string;
   image?: string | null;
   readyInMinutes: number;
@@ -41,6 +42,7 @@ export interface Recipe {
 
 export interface RecipeListItem {
   id: string;
+  slug: string;
   title: string;
   image?: string | null;
   readyInMinutes: number;

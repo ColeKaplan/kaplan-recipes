@@ -49,17 +49,17 @@ export const api = {
     search: (q: string, mealType: string, page: number, pageSize: number) =>
       request<any[]>(`/api/recipes?q=${encodeURIComponent(q)}&mealType=${encodeURIComponent(mealType)}&page=${page}&pageSize=${pageSize}`),
 
-    getById: (id: string) =>
-      request<{ recipe: any; ingredients: any[]; instructions: any[] }>(`/api/recipes/${id}`),
+    getBySlug: (slug: string) =>
+      request<{ recipe: any; ingredients: any[]; instructions: any[] }>(`/api/recipes/${encodeURIComponent(slug)}`),
 
     create: (body: object) =>
-      request<{ id: string }>('/api/recipes', { method: 'POST', body: JSON.stringify(body) }),
+      request<{ id: string; slug: string }>('/api/recipes', { method: 'POST', body: JSON.stringify(body) }),
 
     update: (id: string, body: object) =>
-      request<{ id: string }>(`/api/recipes/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+      request<{ id: string; slug: string }>(`/api/recipes/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
 
     patch: (id: string, data: object) =>
-      request<{ id: string }>(`/api/recipes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      request<{ id: string; slug: string }>(`/api/recipes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
     delete: (id: string) =>
       request<{ success: boolean }>(`/api/recipes/${id}`, { method: 'DELETE' }),

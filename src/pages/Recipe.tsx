@@ -10,10 +10,10 @@ import Footer from "../components/Footer";
 import CommentsSection from "../components/CommentsSection";
 
 const Recipe: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: recipe, isLoading, isError } = useFetchRecipe(id);
+  const { data: recipe, isLoading, isError } = useFetchRecipe(slug);
   const deleteRecipeMutation = useDeleteRecipe();
   const [userRating, setUserRating] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
@@ -47,7 +47,7 @@ const Recipe: React.FC = () => {
     try {
       await api.recipes.patch(recipe.id, updates);
       setUserRating(rating);
-      queryClient.setQueryData(["recipe", id], {
+      queryClient.setQueryData(["recipe", slug], {
         ...recipe,
         aggregateRating: newRating,
         ratingCount: newCount,
@@ -58,7 +58,7 @@ const Recipe: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!recipe || !id) return;
+    if (!recipe) return;
 
     const confirmed = window.confirm(
       `Are you sure you want to delete "${recipe.title}"? This action cannot be undone.`
@@ -67,7 +67,7 @@ const Recipe: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      await deleteRecipeMutation.mutateAsync({ recipeId: id });
+      await deleteRecipeMutation.mutateAsync({ recipeId: recipe.id });
       // Navigate to home page after successful deletion
       navigate("/");
     } catch (error) {
@@ -179,7 +179,7 @@ const Recipe: React.FC = () => {
             {isLoggedIn && (
               <div className="mb-4 flex gap-3 justify-center">
                 <button
-                  onClick={() => navigate(`/edit-recipe/${id}`)}
+                  onClick={() => navigate(`/edit-recipe/${recipe.slug}`)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
                 >
                   Edit Recipe
@@ -270,7 +270,7 @@ const Recipe: React.FC = () => {
           </div>
 
           {/* Comments Section */}
-          <CommentsSection recipeId={id!} />
+          <CommentsSection recipeId={recipe.id} />
         </div>
       </div >
       <Footer />

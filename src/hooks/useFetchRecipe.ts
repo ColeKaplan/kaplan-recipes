@@ -2,13 +2,13 @@ import { useQuery } from "react-query";
 import { Recipe } from "../types/recipe";
 import { api } from "../lib/api";
 
-const useFetchRecipe = (recipeId: string | undefined) => {
+const useFetchRecipe = (slug: string | undefined) => {
   return useQuery<Recipe, Error>(
-    ["recipe", recipeId],
+    ["recipe", slug],
     async () => {
-      if (!recipeId) throw new Error("Recipe ID is required");
+      if (!slug) throw new Error("Recipe slug is required");
 
-      const { recipe, ingredients, instructions } = await api.recipes.getById(recipeId);
+      const { recipe, ingredients, instructions } = await api.recipes.getBySlug(slug);
       if (!recipe) throw new Error("Recipe not found");
 
       // Group instructions by instruction_group
@@ -39,6 +39,7 @@ const useFetchRecipe = (recipeId: string | undefined) => {
 
       return {
         id: recipe.id,
+        slug: recipe.slug,
         title: recipe.title,
         image: recipe.image_url,
         readyInMinutes: recipe.ready_in_minutes,
@@ -66,7 +67,7 @@ const useFetchRecipe = (recipeId: string | undefined) => {
       refetchOnWindowFocus: false,
       staleTime: 60000,
       cacheTime: 3600000,
-      enabled: !!recipeId,
+      enabled: !!slug,
     }
   );
 };

@@ -31,7 +31,7 @@ const useCreateRecipe = () => {
       const allImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined;
 
       // Create recipe on backend
-      const { id: recipeId } = await api.recipes.create({
+      const { slug: recipeSlug } = await api.recipes.create({
         recipeData: {
           title: formData.title,
           summary: formData.summary || null,
@@ -57,7 +57,7 @@ const useCreateRecipe = () => {
       });
 
       // Fetch the complete recipe to return
-      const { recipe, ingredients, instructions } = await api.recipes.getById(recipeId);
+      const { recipe, ingredients, instructions } = await api.recipes.getBySlug(recipeSlug);
 
       const groupedInstructions = (instructions || []).reduce(
         (acc: Record<string, Array<{ number: number; step: string; instruction_group?: string }>>, inst: any) => {
@@ -76,6 +76,7 @@ const useCreateRecipe = () => {
 
       const completeRecipe: Recipe = {
         id: recipe.id,
+        slug: recipe.slug,
         title: recipe.title,
         image: recipe.image_url,
         readyInMinutes: recipe.ready_in_minutes,

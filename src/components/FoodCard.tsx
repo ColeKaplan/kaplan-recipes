@@ -25,7 +25,7 @@ const FoodCard: React.FC<FoodCardProps> = ({ recipe }) => {
     "https://via.placeholder.com/300x150?text=No%20Image";
 
   return (
-    <Link to={`/recipe/${recipe.id}`}>
+    <Link to={`/recipe/${recipe.slug}`}>
       <div className="w-full h-full bg-white rounded-xl overflow-hidden shadow-lg relative hover:underline">
         {/* Food Image */}
         <img

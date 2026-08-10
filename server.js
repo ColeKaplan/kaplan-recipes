@@ -19,6 +19,18 @@ const upload = multer({ storage: multer.memoryStorage() });
 // RECIPES
 // ═══════════════════════════════════════════════════════════════════════════
 
+function slugify(text) {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function normalizeImageUrl(url) {
   if (!url) return url;
   const match = url.match(/\/recipe-images\/([^?#]+)/);
@@ -47,7 +59,7 @@ app.get('/api/recipes', async (req, res) => {
       const to = from + size - 1;
       const { data, error } = await supabase
         .from('recipes')
-        .select('id, title, image_url, ready_in_minutes, servings, meal_type, aggregate_rating, rating_count')
+        .select('id, slug, title, image_url, ready_in_minutes, servings, meal_type, aggregate_rating, rating_count')
         .order('aggregate_rating', { ascending: false })
         .range(from, to);
       if (error) throw error;
@@ -56,7 +68,7 @@ app.get('/api/recipes', async (req, res) => {
 
     let query = supabase
       .from('recipes')
-      .select('id, title, image_url, ready_in_minutes, servings, meal_type, aggregate_rating, rating_count')
+      .select('id, slug, title, image_url, ready_in_minutes, servings, meal_type, aggregate_rating, rating_count')
       .order('created_at', { ascending: false });
 
     if (q && q.trim() !== '') query = query.ilike('title', `%${q}%`);
@@ -72,21 +84,23 @@ app.get('/api/recipes', async (req, res) => {
   }
 });
 
-// GET /api/recipes/:id — single recipe with ingredients + instructions
-app.get('/api/recipes/:id', async (req, res) => {
+// GET /api/recipes/:slug — single recipe with ingredients + instructions
+app.get('/api/recipes/:slug', async (req, res) => {
   try {
-    const { id } = req.params;
-    const [recipeRes, ingredientsRes, instructionsRes] = await Promise.all([
-      supabase.from('recipes').select('*').eq('id', id).single(),
-      supabase.from('ingredients').select('*').eq('recipe_id', id).order('order_index', { ascending: true }),
-      supabase.from('instructions').select('*').eq('recipe_id', id).order('step_number', { ascending: true }),
-    ]);
+    const { slug } = req.params;
+    const recipeRes = await supabase.from('recipes').select('*').eq('slug', slug).single();
     if (recipeRes.error) throw recipeRes.error;
     if (!recipeRes.data) return res.status(404).json({ error: 'Recipe not found' });
+
+    const recipe = recipeRes.data;
+    const [ingredientsRes, instructionsRes] = await Promise.all([
+      supabase.from('ingredients').select('*').eq('recipe_id', recipe.id).order('order_index', { ascending: true }),
+      supabase.from('instructions').select('*').eq('recipe_id', recipe.id).order('step_number', { ascending: true }),
+    ]);
     if (ingredientsRes.error) throw ingredientsRes.error;
     if (instructionsRes.error) throw instructionsRes.error;
     return res.json({
-      recipe: normalizeRecipe(recipeRes.data),
+      recipe: normalizeRecipe(recipe),
       ingredients: ingredientsRes.data || [],
       instructions: instructionsRes.data || [],
     });
@@ -99,12 +113,32 @@ app.get('/api/recipes/:id', async (req, res) => {
 app.post('/api/recipes', async (req, res) => {
   try {
     const { recipeData, ingredients, instructions, userId } = req.body;
+    if (!recipeData?.title || !recipeData.title.trim()) {
+      return res.status(400).json({ error: 'Recipe title is required' });
+    }
+
+    const slug = slugify(recipeData.title);
+    if (!slug) {
+      return res.status(400).json({ error: 'Invalid recipe title for slug generation' });
+    }
+
+    // Check uniqueness of slug
+    const { data: existing } = await supabase.from('recipes').select('id').eq('slug', slug).single();
+    if (existing) {
+      return res.status(409).json({ error: `A recipe with the name "${recipeData.title}" already exists. Recipe names must be unique.` });
+    }
+
     const { data: recipe, error: recipeErr } = await supabase
       .from('recipes')
-      .insert({ ...recipeData, user_id: userId || null })
+      .insert({ ...recipeData, slug, user_id: userId || null })
       .select()
       .single();
-    if (recipeErr) throw recipeErr;
+    if (recipeErr) {
+      if (recipeErr.code === '23505') {
+        return res.status(409).json({ error: `A recipe with the name "${recipeData.title}" already exists.` });
+      }
+      throw recipeErr;
+    }
     if (!recipe) throw new Error('Failed to create recipe');
 
     if (ingredients && ingredients.length > 0) {
@@ -126,7 +160,7 @@ app.post('/api/recipes', async (req, res) => {
         throw error;
       }
     }
-    return res.status(201).json({ id: recipe.id });
+    return res.status(201).json({ id: recipe.id, slug: recipe.slug });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -156,9 +190,33 @@ app.put('/api/recipes/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { recipeData, ingredients, instructions } = req.body;
 
+    let updatePayload = { ...recipeData };
+    if (recipeData?.title) {
+      const slug = slugify(recipeData.title);
+      if (!slug) {
+        return res.status(400).json({ error: 'Invalid recipe title for slug generation' });
+      }
+      // Check if another recipe already uses this slug
+      const { data: existing } = await supabase
+        .from('recipes')
+        .select('id')
+        .eq('slug', slug)
+        .neq('id', id)
+        .single();
+      if (existing) {
+        return res.status(409).json({ error: `A recipe with the name "${recipeData.title}" already exists. Recipe names must be unique.` });
+      }
+      updatePayload.slug = slug;
+    }
+
     const { data: recipe, error: recipeErr } = await supabase
-      .from('recipes').update(recipeData).eq('id', id).select().single();
-    if (recipeErr) throw recipeErr;
+      .from('recipes').update(updatePayload).eq('id', id).select().single();
+    if (recipeErr) {
+      if (recipeErr.code === '23505') {
+        return res.status(409).json({ error: `A recipe with the name "${recipeData.title}" already exists.` });
+      }
+      throw recipeErr;
+    }
     if (!recipe) throw new Error('Failed to update recipe');
 
     await Promise.all([
@@ -178,7 +236,7 @@ app.put('/api/recipes/:id', requireAuth, async (req, res) => {
       );
       if (error) throw error;
     }
-    return res.json({ id: recipe.id });
+    return res.json({ id: recipe.id, slug: recipe.slug });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

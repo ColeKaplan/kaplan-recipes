@@ -9,22 +9,26 @@ import { RecipeFormData } from "../types/recipe";
 import LoadIcon from "../img/icon/loading.gif";
 
 const EditRecipe: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const updateRecipe = useUpdateRecipe();
-    const { data: recipe, isLoading, isError } = useFetchRecipe(id);
+    const { data: recipe, isLoading, isError } = useFetchRecipe(slug);
 
     const handleSubmit = async (formData: RecipeFormData) => {
-        if (!id) return;
+        if (!recipe) return;
 
         try {
-            const result = await updateRecipe.mutateAsync({ recipeId: id, formData });
+            const result = await updateRecipe.mutateAsync({
+                recipeId: recipe.id,
+                currentSlug: recipe.slug,
+                formData,
+            });
             if (result.success) {
-                navigate(`/recipe/${id}`);
+                navigate(`/recipe/${result.recipe.slug}`);
             }
         } catch (error) {
             console.error("Error updating recipe:", error);
-            alert("Failed to update recipe. Please try again.");
+            alert(error instanceof Error ? error.message : "Failed to update recipe. Please try again.");
         }
     };
 
