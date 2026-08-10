@@ -3,6 +3,8 @@ import { RecipeFormData } from "../types/recipe";
 import { Recipe } from "../types/recipe";
 import { api } from "../lib/api";
 
+import { compressImages } from "../utils/imageCompression";
+
 interface CreateRecipeResponse {
   recipe: Recipe;
   success: boolean;
@@ -17,10 +19,11 @@ const useCreateRecipe = () => {
       const token = localStorage.getItem("access_token") || undefined;
       const { user } = await api.auth.getUser(token);
 
-      // Upload images via backend
+      // Compress and upload images via backend
       let uploadedImageUrls: string[] = [];
       if (formData.imageFiles && formData.imageFiles.length > 0) {
-        const { urls } = await api.images.upload(formData.imageFiles);
+        const compressedFiles = await compressImages(formData.imageFiles);
+        const { urls } = await api.images.upload(compressedFiles);
         uploadedImageUrls = urls;
       }
 
